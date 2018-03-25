@@ -6,33 +6,35 @@ import os
 import random
 
 
-class DataResampler:
+class DataReader:
 
     def __init__(self, dir_name):
         self.dir_name = dir_name
         self.files = os.listdir(dir_name)
         self.files.sort()
-        self.size = len(self.files)
-        self.num_labels = [nib.load(os.path.join(dir_name, self.files[i])).shape[3] for i in range(self.size)]
+        self.num_data = len(self.files)
 
-    def load_images(self, idx_case):
-        image = self.load_labels(idx_case)
-        return image.get_data()
+        self.file_objects = [nib.load(os.path.join(dir_name, self.files[i])) for i in range(self.num_data)]
+        self.num_labels = [self.file_objects[i].shape[3] if len(self.file_objects[i].shape) == 4
+                           else 1
+                           for i in range(self.num_data)]
 
-    def load_labels(self, idx_case, idx_label=0):
-        label = nib.load(self.files[idx_case])
-        return label.dataobj[..., idx_label]
+        self.data_shape = self.file_objects[0].shape[0:3]
+
+    def get_num_labels(self, case_indices):
+        return [self.num_labels[i] for i in case_indices]
+
+    def get_data(self, case_indices, label_indices=None):
+        # todo: check the supplied label_indices smaller than num_labels
+        if label_indices is None:  # e.g. images only
+            data = [np.asarray(self.file_objects[i].dataobj) for i in case_indices]  # np.asarray(proxy_img.dataobj)
+        else:
+            data = [self.file_objects[i].dataobj[..., j] if self.num_labels[i] > 1
+                    else np.asarray(self.file_objects[i].dataobj)
+                    for (i, j) in zip(case_indices, label_indices)]
+        return np.expand_dims(np.stack(data, axis=0), axis=4)
 
 
-
-
-
-
-
-
-    def image_label_pairs(self):
-        group_names = ['/case%06d' % i for i in case_indices]
-        return np.expand_dims(np.concatenate([np.expand_dims(self.id_image[i], axis=0) for i in group_names], axis=0), axis=4)
 
 
 

@@ -7,7 +7,6 @@ voxsize_in = 0.8;
 voxsize_out = 0.4;
 
 
-%% for NiftyNet
 normFolder = fullfile(getenv('HOME'),'/Scratch/data/mrusv2/normalised');
 h5fn_image_us = fullfile(normFolder,'us_images_resampled800.h5');
 h5fn_image_mr = fullfile(normFolder,'mr_images_resampled800.h5');
@@ -28,7 +27,7 @@ mkdir(folder_mr_label)
 NumLandmarks_us = h5read(h5fn_label_us,'/num_labels');
 NumLandmarks_mr = h5read(h5fn_label_mr,'/num_labels');
 
-addpath ../../../igitk/external/nifti/
+addpath ../../igitk/external/nifti/
 nn = 0;
 for n = 1:4:108
     
@@ -48,6 +47,8 @@ for n = 1:4:108
     save_nii(make_nii(image_mr,voxsize_out*[1,1,1]), fullfile(folder_mr_image,[GroupName_sample,'.nii']));
     
     num_labels = (floor(rand*3)+1);
+    label_us = [];
+    label_mr = [];
     for m = 1:num_labels
         BinName = sprintf('/case%06d_bin%03d',n-1,m-1);
         label_us(:,:,:,m) = anonymisingFilter(h5read(h5fn_label_us,BinName), voxsize_out/voxsize_in, false);

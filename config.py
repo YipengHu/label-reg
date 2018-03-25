@@ -1,7 +1,7 @@
 import os
 
 
-class Config:
+class Data:
     # data
     dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/mr_images')
     dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/us_images')

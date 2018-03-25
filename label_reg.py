@@ -2,12 +2,17 @@ import tensorflow as tf
 import config
 
 import helper
-import util
-import network as net
+import network
+
+# import util
 import numpy as np
 
 
-data_resampler = helper.DataResampler
+reader_moving_image = helper.DataReader(config.Data.dir_moving_image)
+reader_moving_label = helper.DataReader(config.Data.dir_moving_label)
+reader_fixed_image = helper.DataReader(config.Data.dir_fixed_image)
+reader_fixed_label = helper.DataReader(config.Data.dir_fixed_label)
+
 
 reg_net = net.DDFNet
 
