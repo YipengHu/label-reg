@@ -8,17 +8,27 @@ import random
 
 class DataResampler:
 
-    def __init__(self, dir_image, dir_label):
-        self.dir_image = dir_image
-        self.dir_label = dir_label
+    def __init__(self, dir_name):
+        self.dir_name = dir_name
+        self.files = os.listdir(dir_name)
+        self.files.sort()
+        self.size = len(self.files)
+        self.num_labels = [nib.load(os.path.join(dir_name, self.files[i])).shape[3] for i in range(self.size)]
 
-        self.num_labels = self.id_label['/num_labels'][0]
-        self.num_important = self.id_label['/num_important'][0]
-        self.fn_mask = fn_mask
-        if len(fn_mask) > 0:
-            self.id_mask = h5py.File(self.fn_mask, 'r')
-        else:
-            self.id_mask = []
+    def load_images(self, idx_case):
+        image = self.load_labels(idx_case)
+        return image.get_data()
+
+    def load_labels(self, idx_case, idx_label=0):
+        label = nib.load(self.files[idx_case])
+        return label.dataobj[..., idx_label]
+
+
+
+
+
+
+
 
     def image_label_pairs(self):
         group_names = ['/case%06d' % i for i in case_indices]

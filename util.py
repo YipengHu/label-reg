@@ -647,3 +647,13 @@ reg_D2 = tf.multiply(tf.square(D2), tf.square(tf.norm(tf.reshape(tf.gradients(lo
 loss_d += tf.reduce_mean(reg_D1 + reg_D2) * 0  # (gamma_disc_ph / 2.0)
 """
 
+
+# utility nodes - before filtering
+# movingLabel_warped0 = tftools.resample_linear(movingLabel0, grid_sample_global + displacement_local)
+dice, movingVol, targetVol = tftools.compute_dice(movingLabel_warped0, targetLabel0)
+dist = tftools.compute_centroid_distance(movingLabel_warped0, targetLabel0, grid_reference)
+movingLabel_warped_global = tftools.resample_linear(movingLabel0, grid_sample_global)  # TODO: bug here - needs to be add dimension to grid_sample_global if needed
+if (network_type == 'pre-warp') | (network_type == 'two-stream'):
+    dice_global, movingVol_global, targetVol_global = tftools.compute_dice(movingLabel_warped_global, targetLabel0)
+    dist_global = tftools.compute_centroid_distance(movingLabel_warped_global, targetLabel0, grid_reference)
+

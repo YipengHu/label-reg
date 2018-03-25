@@ -34,10 +34,8 @@ for n = 1:4:108
     
     GroupName = sprintf('/case%06d',n-1);
     
-    image_us = h5read(h5fn_image_us,GroupName);
-    image_mr = h5read(h5fn_image_mr,GroupName);
-    image_us = anonymisingFilter(image_us, voxsize_out/voxsize_in, true);
-    image_mr = anonymisingFilter(image_mr, voxsize_out/voxsize_in, true);
+    image_us = anonymisingFilter(h5read(h5fn_image_us,GroupName), voxsize_out/voxsize_in, true);
+    image_mr = anonymisingFilter(h5read(h5fn_image_mr,GroupName), voxsize_out/voxsize_in, true);
     if flag_plot
         figure, GrayMontage(image_us)
         figure, GrayMontage(image_mr)
@@ -49,25 +47,23 @@ for n = 1:4:108
     save_nii(make_nii(image_us,voxsize_out*[1,1,1]), fullfile(folder_us_image,[GroupName_sample,'.nii']));
     save_nii(make_nii(image_mr,voxsize_out*[1,1,1]), fullfile(folder_mr_image,[GroupName_sample,'.nii']));
     
-    for m = 1:(floor(rand*3)+1)
+    num_labels = (floor(rand*3)+1);
+    for m = 1:num_labels
         BinName = sprintf('/case%06d_bin%03d',n-1,m-1);
-        label_us = h5read(h5fn_label_us,BinName);
-        label_mr = h5read(h5fn_label_mr,BinName);
-        label_us = anonymisingFilter(label_us, voxsize_out/voxsize_in, false);
-        label_mr = anonymisingFilter(label_mr, voxsize_out/voxsize_in, false);
+        label_us(:,:,:,m) = anonymisingFilter(h5read(h5fn_label_us,BinName), voxsize_out/voxsize_in, false);
+        label_mr(:,:,:,m) = anonymisingFilter(h5read(h5fn_label_mr,BinName), voxsize_out/voxsize_in, false);
         % check
-        if nnz(label_us)==0 || nnz(label_us)==0, error('empty label(s)'); end
+        if nnz(label_us(:,:,:,m))==0 || nnz(label_us(:,:,:,m))==0, error('empty label(s)'); end
         if flag_plot
-            figure, GrayMontage(label_us)
-            figure, GrayMontage(label_mr)
+            figure, GrayMontage(label_us(:,:,:,m))
+            figure, GrayMontage(label_mr(:,:,:,m))
             pause; close all
         end
         
-        BinName_sample = sprintf('case%06d_bin%03d',nn-1,m-1);
-        save_nii(make_nii(label_us,voxsize_out*[1,1,1]), fullfile(folder_us_label,[BinName_sample,'.nii']));
-        save_nii(make_nii(label_mr,voxsize_out*[1,1,1]), fullfile(folder_mr_label,[BinName_sample,'.nii']));
-        
     end
+    BinName_sample = sprintf('case%06d_bin%03d',nn-1,m-1);
+    save_nii(make_nii(label_us,voxsize_out*[1,1,1]), fullfile(folder_us_label,[GroupName_sample,'.nii']));
+    save_nii(make_nii(label_mr,voxsize_out*[1,1,1]), fullfile(folder_mr_label,[GroupName_sample,'.nii']));
     
 end
 

@@ -1,10 +1,12 @@
+import os
+
 
 class Config:
-    # used in main function
-    dir_moving_image = './data/mr_images'
-    dir_fixed_image = './data/us_images'
-    dir_moving_label = './data/mr_labels'
-    dir_fixed_label = './data/us_labels'
+    # data
+    dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/mr_images')
+    dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/us_images')
+    dir_moving_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/mr_labels')
+    dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/us_labels')
 
     # network
     num_channel_initial = 32
@@ -26,8 +28,6 @@ class Config:
     total_iterations = 1e5
     minibatch_size = 8
     learning_rate = 1e-5
-    initial_bias_global = 0.0
-    initial_std_global = 0.0
 
     # verbose
     info_print_freq = 100
