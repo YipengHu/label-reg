@@ -1,10 +1,10 @@
-# Weakly-supervised convolutional neural networks for multimodal image registration
+# Weakly-Supervised Convolutional Neural Networks for Multimodal Image Registration
 
 ## Introduction
 This is a tutorial aiming to use concise and self-explanatory code to describe the implementation of the deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was published in [Hu et al ISBI2018][Hu2018b]). A full re-implementation is available at [NiftyNet platform][niftynet]. The sections are organised as follows:
 
-* [Data]{}
-* Multimodal image registration
+* Multimodal Image Registration
+* [Example Data](##example-data)
 * Weakly-supervised dense correspondence learning
 * Label similarity measures
 * Training
@@ -19,7 +19,17 @@ This is a tutorial aiming to use concise and self-explanatory code to describe t
 [niftynet]: http://niftynet.io/
 
 
-## Data
+
+
+
+## Multimodal Image Registration
+Medical image registration aims to find a dense displacemnt field (DDF), such that a given "moving image" can be warped (resampled using the DDF) to match a second "fixed image", that is, the corresponding anatomical structures are in the same spatial location.
+
+The definition of "multimodal" varies from changing of imaging parameters (such as MR sequancing or contrast agents) to different scanners. 
+<p style=\"float: left; width: 85%; margin-right: 1%;\"><img src=\"./media/volume_mr.jpg\" /></p>\n
+<p style=\"float: left; width: 85%; margin-right: 1%;\"><img src=\"./media/volume_us.jpg\" /></p>\n
+
+## Example Data
 Some example data can be downloaded directly [here][data].
 
 Unzip the data
@@ -27,13 +37,7 @@ Unzip the data
 [data]: 
 
 
-## Multimodal image registration
-Medical image registration aims to find a dense displacemnt field (DDF), such that a given "moving image" can be warped (resampled using the DDF) to match a second "fixed image", that is, the corresponding anatomical structures are in the same spatial location.
-
-The definition of "multimodal" varies from changing of imaging parameters (such as MR sequancing or contrast agents) to different scanners. 
-
-
-## Weakly-supervised dense correspondence learning
+## Weakly-supervised Dense Correspondence Learning
 The idea of the wearkly-supervised learning is to use expert labels that represent the same anatomical structures. The label-driven method is a "lazy" method (e.g. compared to simulating complex biological deformation or engineering sophisticated similarity measure, used in supervised or unsupervised approches, respectively) or a "industrious" method that requires a great amount manually-annotated anatomical structures in volumetric data.
 
 While the target is predicting DDF which we do not have ground-truth data, the method is considered as "weakly-supervised" because the anatomical labels are used only in training so at inference time, the registration does not need any labels (i.e. fully-automated image registration accepts a pair of images and predicts a DDF, without segmentation of kind to aid the alignment or even initialisation). They are treated as if they are the "target labels" instead of "input predictors" in a classical regression analysis. A more detailed discussion of the formulation of the "weakly-supervised registration" is provided in the later section and it is not in the papers! ;)
