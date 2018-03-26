@@ -1,3 +1,15 @@
+import tensorflow as tf
+
+
+class BaseNet:
+    def __init__(self, minibatch_size, size_fixed):
+        self.minibatch_size = minibatch_size
+        self.size_fixed = size_fixed
+
+
+
+class LocalNet:
+
 
 # other options
 initialiser_local = tf.random_normal_initializer(0, initial_std_local)  # tf.contrib.layers.xavier_initializer()

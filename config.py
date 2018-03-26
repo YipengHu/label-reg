@@ -8,6 +8,8 @@ class Data:
     dir_moving_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/mr_labels')
     dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/us_labels')
 
+
+class Network:
     # network
     num_channel_initial = 32
     conv_size_initial = 7
@@ -24,6 +26,8 @@ class Data:
         initial_bias_global = 0.0
         initial_std_global = 0.0
 
+
+class Train:
     # training
     total_iterations = 1e5
     minibatch_size = 8

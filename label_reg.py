@@ -14,7 +14,7 @@ reader_fixed_image = helper.DataReader(config.Data.dir_fixed_image)
 reader_fixed_label = helper.DataReader(config.Data.dir_fixed_label)
 
 
-reg_net = net.DDFNet
+reg_net = network.global_net(config.Train.minibatch_size)
 
 
 
