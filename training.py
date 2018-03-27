@@ -4,19 +4,37 @@ import config
 import labelreg.helpers as helper
 import labelreg.networks as network
 
-# import util
+import labelreg.utils as util
+
 import numpy as np
 
-
-reader_moving_image = helper.DataReader(config.Data.dir_moving_image)
-reader_moving_label = helper.DataReader(config.Data.dir_moving_label)
-reader_fixed_image = helper.DataReader(config.Data.dir_fixed_image)
-reader_fixed_label = helper.DataReader(config.Data.dir_fixed_label)
-
-
-labelreg_net = network.global_net(config.Train.minibatch_size)
+# data
+reader_moving_image, reader_moving_label = helper.get_data_readers(config.Data.dir_moving_image,
+                                                                   config.Data.dir_moving_label)
+reader_fixed_image, reader_fixed_label = helper.get_data_readers(config.Data.dir_fixed_image,
+                                                                 config.Data.dir_fixed_label)
 
 
+# graph
+ph_moving_image = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_moving_image.data_shape+[1])
+ph_fixed_image = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_fixed_image.data_shape+[1])
+ph_moving_affine = tf.placeholder(tf.float32, [config.Train.minibatch_size]+[1, 12])
+ph_fixed_affine = tf.placeholder(tf.float32, [config.Train.minibatch_size]+[1, 12])
+# data augmentation
+input_moving_image = util.warp_image_affine(ph_moving_image, ph_moving_affine)
+input_fixed_image = util.warp_image_affine(ph_fixed_image, ph_fixed_affine)
+
+# predicting ddf
+labelreg_net = network.build_network(network_type=config.Network.network_type,
+                                     ddf_levels=config.Network.ddf_levels,
+                                     minibatch_size=config.Train.minibatch_size,
+                                     image_moving=input_moving_image,
+                                     image_fixed=input_fixed_image
+                                     )
+
+# loss
+ph_moving_label = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_moving_image.data_shape+[1])
+ph_fixed_label = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_fixed_image.data_shape+[1])
 
 
 if not (totalDataSize == totalDataSize2):

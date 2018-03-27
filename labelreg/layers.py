@@ -1,42 +1,47 @@
 import tensorflow as tf
 
+
 # variables
-def var_conv_kernel(ch_in, ch_out, k_conv=None, initialiser=None):
-    if k_conv is None:
-        k_conv = [3, 3, 3]
-    if initialiser is None:
-        initialiser = tf.contrib.layers.xavier_initializer()
-    return tf.get_variable("W", shape=k_conv+[ch_in]+[ch_out], initializer=initialiser)
+def var_conv_kernel(ch_in, ch_out, k_conv=None, initialiser=None, name='W'):
+    with tf.variable_scope(name):
+        if k_conv is None:
+            k_conv = [3, 3, 3]
+        if initialiser is None:
+            initialiser = tf.contrib.layers.xavier_initializer()
+        return tf.get_variable(name, shape=k_conv+[ch_in]+[ch_out], initializer=initialiser)
 
 
-def var_bias(b_shape, initialiser=None):
-    if initialiser is None:
-        initialiser = tf.contrib.layers.xavier_initializer()
-    return tf.get_variable("b", shape=[b_shape], initializer=initialiser)
+def var_bias(b_shape, initialiser=None, name='b'):
+    with tf.variable_scope(name):
+        if initialiser is None:
+            initialiser = tf.contrib.layers.xavier_initializer()
+        return tf.get_variable(name, shape=[b_shape], initializer=initialiser)
 
 
 # blocks
-def conv3_block(input, w, strides=None):
+def conv3_block(input_, ch_in, ch_out, k_conv=None, strides=None, name=None):
     if strides is None:
-        strides = [1, 2, 2, 2, 1]
-    return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(input, w, strides, "SAME")))
+        strides = [1, 1, 1, 1, 1]
+    with tf.variable_scope(name):
+        w = var_conv_kernel(ch_in, ch_out, k_conv, name=name)
+        return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(input_, w, strides, "SAME")))
 
 
-def deconv3_block(input, w, shape_out, strides):
-    return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d_transpose(input, w, shape_out, strides, "SAME")))
+def deconv3_block(input_, ch_in, ch_out, shape_out, strides, name=None):
+    with tf.variable_scope(name):
+        w = var_conv_kernel(ch_in, ch_out, name=name)
+        return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d_transpose(input_, w, shape_out, strides, "SAME")))
 
 
-def downsample_resnet_block(input, ch_in, ch_out, k_conv0=None, use_pooling=True, name='downsample_resnet_block'):
+def downsample_resnet_block(input_, ch_in, ch_out, k_conv0=None, use_pooling=True, name='downsample_resnet_block'):
     if k_conv0 is None:
         k_conv0 = [3, 3, 3]
     strides1 = [1, 1, 1, 1, 1]
     strides2 = [1, 2, 2, 2, 1]
     with tf.variable_scope(name):
-        w0 = var_conv_kernel(ch_in, ch_out, k_conv0)
-        wr1 = var_conv_kernel(ch_out, ch_out)
-        wr2 = var_conv_kernel(ch_out, ch_out)
-        h0 = conv3_block(input, w0, strides1)
-        r1 = conv3_block(h0, wr1, strides1)
+        h0 = conv3_block(input_, ch_in, ch_out, k_conv0, name='W0')
+        r1 = conv3_block(h0, ch_out, ch_out, name='WR1')
+        wr2 = var_conv_kernel(ch_out, ch_out, name='WR2')
         r2 = tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(r1, wr2, strides1, "SAME")) + h0)
         if use_pooling:
             k_pool = [1, 2, 2, 2, 1]
@@ -47,35 +52,38 @@ def downsample_resnet_block(input, ch_in, ch_out, k_conv0=None, use_pooling=True
         return h1, h0
 
 
-def upsample_resnet_block(input, input_skip, ch_in, ch_out, use_additive_upsampling=True, name='upsample_resnet_block'):
+def upsample_resnet_block(input_, input_skip, ch_in, ch_out, use_additive_upsampling=True, name='upsample_resnet_block'):
     strides1 = [1, 1, 1, 1, 1]
     strides2 = [1, 2, 2, 2, 1]
     size_out = input_skip.get_shape()
     with tf.variable_scope(name):
-        w0 = var_conv_kernel(ch_out, ch_in)
-        wr1 = var_conv_kernel(ch_out, ch_out)
-        wr2 = var_conv_kernel(ch_out, ch_out)
-        h0 = deconv3_block(input, w0, size_out, strides2)
+        h0 = deconv3_block(input_, ch_out, ch_in, size_out, strides2, name='W0')
         if use_additive_upsampling:
-            h0 += additive_up_sampling(input, size_out)
+            h0 += additive_up_sampling(input_, size_out[1:4])
         r1 = h0 + input_skip
-        r2 = conv3_block(h0, wr1, strides1, "SAME")
-        h1 = tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(r1, wr2, strides1, "SAME")) + r1)
+        r2 = conv3_block(h0, ch_out, ch_out, name='WR1')
+        wr2 = var_conv_kernel(ch_out, ch_out, name='WR2')
+        h1 = tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(r2, wr2, strides1, "SAME")) + r1)
         return h1
 
 
-def ddf_summand(input, w, b, shape_out):
+def ddf_summand(input_, ch_in, shape_out, name='ddf_summand'):
     strides1 = [1, 1, 1, 1, 1]
-    if input.get_shape() == shape_out:
-        return tf.nn.conv3d(input, w, strides1, "SAME") + b
-    else:
-        return resize_volume(tf.nn.conv3d(input, w, strides1, "SAME") + b, shape_out)
+    initial_bias_local = 0.0
+    initial_std_local = 0.0
+    with tf.variable_scope(name):
+        w = var_conv_kernel(ch_in, 3, initialiser=tf.random_normal_initializer(0, initial_std_local))
+        b = var_bias(3, initialiser=tf.constant_initializer(initial_bias_local))
+        if input_.get_shape() == shape_out:
+            return tf.nn.conv3d(input_, w, strides1, "SAME") + b
+        else:
+            return resize_volume(tf.nn.conv3d(input_, w, strides1, "SAME") + b, shape_out)
 
 
 # layers
-def additive_up_sampling(layer, size, stride=2, name='additive_upsampling'):
+def additive_up_sampling(input_, size, stride=2, name='additive_upsampling'):
     with tf.variable_scope(name):
-        return tf.reduce_sum(tf.stack(tf.split(resize_volume(layer, size), stride, axis=4), axis=5), axis=5)
+        return tf.reduce_sum(tf.stack(tf.split(resize_volume(input_, size), stride, axis=4), axis=5), axis=5)
 
 
 def resize_volume(image, size, method=0, name='resize_volume'):

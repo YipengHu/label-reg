@@ -6,6 +6,16 @@ import os
 import random
 
 
+def get_data_readers(dir_image, dir_label):
+    reader_image = DataReader(dir_image)
+    reader_label = DataReader(dir_label)
+    if not (reader_image.num_data == reader_label.num_data):
+        raise Exception('Unequal num_data between images and labels!')
+    if not (reader_image.data_shape == reader_label.data_shape):
+        raise Exception('Unequal data_shape between images and labels!')
+    return reader_image, reader_label
+
+
 class DataReader:
 
     def __init__(self, dir_name):
@@ -19,7 +29,7 @@ class DataReader:
                            else 1
                            for i in range(self.num_data)]
 
-        self.data_shape = self.file_objects[0].shape[0:3]
+        self.data_shape = list(self.file_objects[0].shape[0:3])
 
     def get_num_labels(self, case_indices):
         return [self.num_labels[i] for i in case_indices]
