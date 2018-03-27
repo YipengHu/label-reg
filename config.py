@@ -15,16 +15,17 @@ class Network:
     ddf_levels = [0, 1, 2, 3, 4]
 
 
-class Train:
-    # loss
-    loss_type = 'dice'  # 'ce'
-    loss_scales = [0, 1, 2, 4, 8, 16]
+class Loss:
+    similarity_type = 'dice'  # 'cross-entropy'
+    similarity_scales = [0, 1, 2, 4, 8, 16]
     regulariser_type = 'bending'  # 'gradient-l2'
     regulariser_weight = 0.5
-    # training
-    total_iterations = 1e5
+
+
+class Train:
+    total_iterations = int(1e5)
     minibatch_size = 8
     learning_rate = 1e-5
     # output
-    info_print_freq = 100
+    info_print_freq = 2
     dir_model_save = os.path.join(os.environ['HOME'], 'git/label-reg-demo/model')

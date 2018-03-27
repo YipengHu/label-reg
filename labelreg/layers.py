@@ -33,7 +33,7 @@ def deconv3_block(input_, ch_in, ch_out, shape_out, strides, name=None):
         return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d_transpose(input_, w, shape_out, strides, "SAME")))
 
 
-def downsample_resnet_block(input_, ch_in, ch_out, k_conv0=None, use_pooling=True, name='downsample_resnet_block'):
+def downsample_resnet_block(input_, ch_in, ch_out, k_conv0=None, use_pooling=True, name='down_resnet_block'):
     if k_conv0 is None:
         k_conv0 = [3, 3, 3]
     strides1 = [1, 1, 1, 1, 1]
@@ -52,10 +52,10 @@ def downsample_resnet_block(input_, ch_in, ch_out, k_conv0=None, use_pooling=Tru
         return h1, h0
 
 
-def upsample_resnet_block(input_, input_skip, ch_in, ch_out, use_additive_upsampling=True, name='upsample_resnet_block'):
+def upsample_resnet_block(input_, input_skip, ch_in, ch_out, use_additive_upsampling=True, name='up_resnet_block'):
     strides1 = [1, 1, 1, 1, 1]
     strides2 = [1, 2, 2, 2, 1]
-    size_out = input_skip.get_shape()
+    size_out = input_skip.shape.as_list()
     with tf.variable_scope(name):
         h0 = deconv3_block(input_, ch_out, ch_in, size_out, strides2, name='W0')
         if use_additive_upsampling:
@@ -90,11 +90,29 @@ def resize_volume(image, size, method=0, name='resize_volume'):
     # size is [depth, height width]
     # image is Tensor with shape [batch, depth, height, width, channels]
     with tf.variable_scope(name):
-        reshaped2d = tf.reshape(image, [-1, int(image.get_shape()[2]), int(image.get_shape()[3]), int(image.get_shape()[4])])
-        resized2d = tf.image.resize_images(reshaped2d,[size[1],size[2]],method)
-        reshaped2d = tf.reshape(resized2d, [int(image.get_shape()[0]), int(image.get_shape()[1]), size[1], size[2], int(image.get_shape()[4])])
-        permuted = tf.transpose(reshaped2d, [0,3,2,1,4])
-        reshaped2db = tf.reshape(permuted, [-1, size[1], int(image.get_shape()[1]), int(image.get_shape()[4])])
-        resized2db = tf.image.resize_images(reshaped2db,[size[1],size[0]],method)
-        reshaped2db = tf.reshape(resized2db, [int(image.get_shape()[0]), size[2], size[1], size[0], int(image.get_shape()[4])])
+        reshaped2d = tf.reshape(image,
+                                [-1,
+                                 int(image.get_shape()[2]),
+                                 int(image.get_shape()[3]),
+                                 int(image.get_shape()[4])])
+        resized2d = tf.image.resize_images(reshaped2d, [size[1], size[2]], method)
+        reshaped2d = tf.reshape(resized2d,
+                                [int(image.get_shape()[0]),
+                                 int(image.get_shape()[1]),
+                                 size[1],
+                                 size[2],
+                                 int(image.get_shape()[4])])
+        permuted = tf.transpose(reshaped2d, [0, 3, 2, 1, 4])
+        reshaped2db = tf.reshape(permuted,
+                                 [-1,
+                                  size[1],
+                                  int(image.get_shape()[1]),
+                                  int(image.get_shape()[4])])
+        resized2db = tf.image.resize_images(reshaped2db, [size[1], size[0]], method)
+        reshaped2db = tf.reshape(resized2db,
+                                 [int(image.get_shape()[0]),
+                                  size[2],
+                                  size[1],
+                                  size[0],
+                                  int(image.get_shape()[4])])
         return tf.transpose(reshaped2db, [0, 3, 2, 1, 4])
