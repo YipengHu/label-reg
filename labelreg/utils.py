@@ -60,18 +60,7 @@ def warp_grid(grid, theta):
     return tf.reshape(tf.transpose(grid_warped, [0, 2, 1]), [num_batch, size_i, size_j, size_k, 3])
 
 
-def resize_volume(image, size, method=0, name='resizeVolume'):
-    with tf.variable_scope(name):
-        # size is [depth, height width]
-        # image is Tensor with shape [batch, depth, height, width, channels]
-        reshaped2D = tf.reshape(image, [-1, int(image.get_shape()[2]), int(image.get_shape()[3]), int(image.get_shape()[4])])
-        resized2D = tf.image.resize_images(reshaped2D,[size[1],size[2]],method)
-        reshaped3D = tf.reshape(resized2D, [int(image.get_shape()[0]), int(image.get_shape()[1]), size[1], size[2], int(image.get_shape()[4])])
-        permuted = tf.transpose(reshaped3D, [0,3,2,1,4])
-        reshaped2DB = tf.reshape(permuted, [-1, size[1], int(image.get_shape()[1]), int(image.get_shape()[4])])
-        resized2DB = tf.image.resize_images(reshaped2DB,[size[1],size[0]],method)
-        reshaped3DB = tf.reshape(resized2DB, [int(image.get_shape()[0]), size[2], size[1], size[0], int(image.get_shape()[4])])
-        return tf.transpose(reshaped3DB, [0, 3, 2, 1, 4])
+
 
 
 def resample_linear(inputs, sample_coords, boundary='ZERO'):
@@ -408,9 +397,6 @@ def dice_distance(ts, ps, dw, grid, eps_overlap=1e-6):
     ds = tf.sqrt(tf.reduce_sum(tf.square(c1-c2), axis=1, keep_dims=True)) * dw
     return dice-tf.floor(1-dice)*ds, dice, ds
 
-
-def additive_up_sampling(layer, size, stride=2):
-    return tf.reduce_sum(tf.stack(tf.split(resize_volume(layer, size), stride, axis=4), axis=5), axis=5)
 
 
 def gauss_kernel1d(sigma):

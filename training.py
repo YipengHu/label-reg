@@ -1,8 +1,8 @@
 import tensorflow as tf
 import config
 
-import helper
-import network
+import labelreg.helpers as helper
+import labelreg.networks as network
 
 # import util
 import numpy as np
