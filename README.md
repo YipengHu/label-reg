@@ -4,15 +4,15 @@
 ## Introduction
 This is a tutorial aiming to use minimum and mostly self-explanatory scripts to describe the implementation of the deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was published in [Hu et al ISBI2018][Hu2018b]). A full re-implementation with many other unitilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
 
-* [1. Multimodal Image Registration](#section1)
+* [**1. Multimodal Image Registration**](#section1)
 * [     Example Data](#section1-1)
-* [2. Weakly-Supervised Dense Correspondence Learning](#section2)
+* [**2. Weakly-Supervised Dense Correspondence Learning**](#section2)
 * [     Label Similarity Measures](#section2-1)
 * [     Deformation Regularisation](#section2-2)
 * [     Convolutional Neural Networks for Predicting Displacements](#section2-3)
 * [     Training](#section2-4)
-* [3. Try with Your Own Image-Label Data](#section3)
-* [4. Weakly-Supervised Registration Revisted](#section4)
+* [**3. Try with Your Own Image-Label Data**](#section3)
+* [**4. Weakly-Supervised Registration Revisted**](#section4)
 
 
 ## <a name="section1"></a>1 Multimodal Image Registration
@@ -53,6 +53,7 @@ As a result, labels are not requried in the subsequent inference, i.e. the regis
 
 ### <a name="section2-1"></a>Label Similarity Measures
 The main problems with label-driven registration methods are labels representing corresponding structures are inherently sparse - among training cases, the same anatomical structures are not always present between a given moving and fixed image pair for training; when available, they neither cover the entire image domain nor detailed voxel correspondence. The following two examples show that 
+
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_case1.jpg "Example Case 1")
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_case2.jpg "Example Case 2")
 
