@@ -62,7 +62,7 @@ def random_transform_generator(batch_size, corner_scale=.1):
                                          [-1., 1., -1., 1.],
                                          [1., -1., -1., 1.]]], [0, 1, 2]),
                           [batch_size, 1, 1])
-    transforms = np.array([np.linalg.lstsq(src_corners[k], new_corners[k])[0]
+    transforms = np.array([np.linalg.lstsq(src_corners[k], new_corners[k], rcond=-1)[0]
                            for k in range(src_corners.shape[0])])
     transforms = np.reshape(np.transpose(transforms[:][:, :][:, :, :3], [0, 2, 1]), [-1, 1, 12])
     return transforms

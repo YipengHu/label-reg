@@ -11,7 +11,7 @@ v = mat2gray(imresize3(v,scale,'cubic'));
 v = uint8(v*255);
 
 if bin
-    v = v>=bin;
+    v = uint8(v>=0.5);
 end
 
 

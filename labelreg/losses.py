@@ -2,16 +2,20 @@ import tensorflow as tf
 
 
 def build_loss(similarity_type, similarity_scales, regulariser_type, regulariser_weight,
-               label_moving, label_fixed, ddf):
+               label_moving, label_fixed, network_type, ddf):
     label_similarity = multi_scale_loss(label_fixed, label_moving, similarity_type.lower(), similarity_scales)
-    ddf_regularisation = local_displacement_energy(ddf, regulariser_type, regulariser_weight)
-    return tf.reduce_mean(label_similarity), tf.reduce_mean(ddf_regularisation)
+    if network_type.lower() == 'global':
+        ddf_regularisation = tf.constant(0.0)
+    else:
+        ddf_regularisation = tf.reduce_mean(local_displacement_energy(ddf, regulariser_type, regulariser_weight))
+    return tf.reduce_mean(label_similarity), ddf_regularisation
 
 
 def weighted_binary_cross_entropy(ts, ps, pw=1, eps=1e-6):
     ps = tf.clip_by_value(ps, eps, 1-eps)
-    return -tf.reduce_sum(tf.concat([ts*pw, 1-ts], axis=4)*tf.log(tf.concat([ps, 1-ps],
-                                                                            axis=4)), axis=4, keep_dims=True)
+    return -tf.reduce_sum(
+        tf.concat([ts*pw, 1-ts], axis=4)*tf.log(tf.concat([ps, 1-ps], axis=4)),
+        axis=4, keep_dims=True)
 
 
 def dice_simple(ts, ps, eps_vol=1e-6):
@@ -132,6 +136,6 @@ def local_displacement_energy(ddf, energy_type, energy_weight):
         else:
             raise Exception('Not recognised local regulariser!')
     else:
-        energy = 0.0
+        energy = tf.constant(0.0)
 
-    return energy
+    return energy*energy_weight

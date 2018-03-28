@@ -26,7 +26,6 @@ input_fixed_image = util.warp_image_affine(ph_fixed_image, ph_fixed_affine)  # d
 
 # predicting ddf
 reg_net = network.build_network(network_type=config.Network.network_type,
-                                ddf_levels=config.Network.ddf_levels,
                                 minibatch_size=config.Train.minibatch_size,
                                 image_moving=input_moving_image,
                                 image_fixed=input_fixed_image
@@ -46,6 +45,7 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config.Loss.
                                                     regulariser_weight=config.Loss.regulariser_weight,
                                                     label_moving=warped_moving_label,
                                                     label_fixed=input_fixed_label,
+                                                    network_type=config.Network.network_type,
                                                     ddf=reg_net.ddf
                                                     )
 
@@ -89,14 +89,55 @@ for step in range(config.Train.total_iterations):
              dist],
             feed_dict=trainFeed)
 
-        print('----- Training -----')
-        print('Step %d [%s]: loss=%f, (similarity=%f, regulariser=%f)' %
+        # print('----- Training -----')
+        print('Step %d [%s]: Loss=%f (similarity=%f, regulariser=%f)' %
               (step,
                current_time,
                loss_similarity_train+loss_regulariser_train,
-               loss_similarity_train,
+               1-loss_similarity_train,
                loss_regulariser_train))
         print('  Dice: %s' % dice_train)
         print('  Distance: %s' % dist_train)
+        print('  Image-label indices: %s - %s' % (case_indices, label_indices))
+
+"""
+    # debug:
+    if True:
+        if step==0:
+            import nibabel as nib
+            import numpy as np
+
+        ph_moving_image_train, ph_fixed_image_train, ph_moving_label_train, ph_fixed_label_train = sess.run(
+            [ph_moving_image,
+             ph_fixed_image,
+             ph_moving_label,
+             ph_fixed_label],
+            feed_dict=trainFeed)
+        for idx in range(config.Train.minibatch_size):
+            nib.save(nib.Nifti1Image(ph_moving_image_train[idx, ...], np.diag([1, 1, 1, 1])),
+                     'ph_moving_image_train_%s.nii' % idx)
+            nib.save(nib.Nifti1Image(ph_fixed_image_train[idx, ...], np.diag([1, 1, 1, 1])),
+                     'ph_fixed_image_train_%s.nii' % idx)
+            nib.save(nib.Nifti1Image(ph_moving_label_train[idx, ...], np.diag([1, 1, 1, 1])),
+                     'ph_moving_label_train_%s.nii' % idx)
+            nib.save(nib.Nifti1Image(ph_fixed_label_train[idx, ...], np.diag([1, 1, 1, 1])),
+                     'ph_fixed_label_train_%s.nii' % idx)
+
+        warped_moving_label_train, ddf_train = sess.run(
+            [warped_moving_label,
+             reg_net.ddf],
+            feed_dict=trainFeed)
+        for idx in range(config.Train.minibatch_size):
+            nib.save(nib.Nifti1Image(ph_moving_image_train[idx, ...], np.diag([1, 1, 1, 1])),
+                     'ph_moving_image_train_%s.nii' % idx)
+            nib.save(nib.Nifti1Image(ph_fixed_image_train[idx, ...], np.diag([1, 1, 1, 1])),
+                     'ph_fixed_image_train_%s.nii' % idx)
+            nib.save(nib.Nifti1Image(ph_moving_label_train[idx, ...], np.diag([1, 1, 1, 1])),
+                     'ph_moving_label_train_%s.nii' % idx)
+            nib.save(nib.Nifti1Image(ph_fixed_label_train[idx, ...], np.diag([1, 1, 1, 1])),
+                     'ph_fixed_label_train_%s.nii' % idx)
+"""
+
+
 
 

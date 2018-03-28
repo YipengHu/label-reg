@@ -15,11 +15,18 @@ def var_bias(b_shape, initialiser=None, name='b'):
     with tf.variable_scope(name):
         if initialiser is None:
             initialiser = tf.contrib.layers.xavier_initializer()
-        return tf.get_variable(name, shape=[b_shape], initializer=initialiser)
+        return tf.get_variable(name, shape=b_shape, initializer=initialiser)
+
+
+def var_projection(shape_, initialiser=None, name='P'):
+    with tf.variable_scope(name):
+        if initialiser is None:
+            initialiser = tf.contrib.layers.xavier_initializer()
+    return tf.get_variable(name, shape=shape_, initializer=initialiser)
 
 
 # blocks
-def conv3_block(input_, ch_in, ch_out, k_conv=None, strides=None, name=None):
+def conv3_block(input_, ch_in, ch_out, k_conv=None, strides=None, name='conv3_block'):
     if strides is None:
         strides = [1, 1, 1, 1, 1]
     with tf.variable_scope(name):
@@ -27,7 +34,7 @@ def conv3_block(input_, ch_in, ch_out, k_conv=None, strides=None, name=None):
         return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(input_, w, strides, "SAME")))
 
 
-def deconv3_block(input_, ch_in, ch_out, shape_out, strides, name=None):
+def deconv3_block(input_, ch_in, ch_out, shape_out, strides, name='deconv3_block'):
     with tf.variable_scope(name):
         w = var_conv_kernel(ch_in, ch_out, name=name)
         return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d_transpose(input_, w, shape_out, strides, "SAME")))
@@ -73,7 +80,7 @@ def ddf_summand(input_, ch_in, shape_out, name='ddf_summand'):
     initial_std_local = 0.0
     with tf.variable_scope(name):
         w = var_conv_kernel(ch_in, 3, initialiser=tf.random_normal_initializer(0, initial_std_local))
-        b = var_bias(3, initialiser=tf.constant_initializer(initial_bias_local))
+        b = var_bias([3], initialiser=tf.constant_initializer(initial_bias_local))
         if input_.get_shape() == shape_out:
             return tf.nn.conv3d(input_, w, strides1, "SAME") + b
         else:
@@ -81,6 +88,17 @@ def ddf_summand(input_, ch_in, shape_out, name='ddf_summand'):
 
 
 # layers
+def fully_connected(input_, length_out, name='fully_connected'):
+    initial_bias_global = 0.0
+    initial_std_global = 0.0
+    input_size = input_.shape.as_list()
+    with tf.variable_scope(name):
+        w = var_projection([input_size[1]*input_size[2]*input_size[3]*input_size[4], length_out],
+                           initialiser=tf.random_normal_initializer(0, initial_std_global))
+        b = var_bias([1, length_out], initialiser=tf.constant_initializer(initial_bias_global))
+        return tf.matmul(tf.reshape(input_, [input_size[0], -1]), w) + b
+
+
 def additive_up_sampling(input_, size, stride=2, name='additive_upsampling'):
     with tf.variable_scope(name):
         return tf.reduce_sum(tf.stack(tf.split(resize_volume(input_, size), stride, axis=4), axis=5), axis=5)

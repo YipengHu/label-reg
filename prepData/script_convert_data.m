@@ -51,8 +51,8 @@ for n = 1:4:108
     label_mr = [];
     for m = 1:num_labels
         BinName = sprintf('/case%06d_bin%03d',n-1,m-1);
-        label_us(:,:,:,m) = anonymisingFilter(h5read(h5fn_label_us,BinName), voxsize_out/voxsize_in, false);
-        label_mr(:,:,:,m) = anonymisingFilter(h5read(h5fn_label_mr,BinName), voxsize_out/voxsize_in, false);
+        label_us(:,:,:,m) = anonymisingFilter(h5read(h5fn_label_us,BinName), voxsize_out/voxsize_in, false, true);
+        label_mr(:,:,:,m) = anonymisingFilter(h5read(h5fn_label_mr,BinName), voxsize_out/voxsize_in, false, true);
         % check
         if nnz(label_us(:,:,:,m))==0 || nnz(label_us(:,:,:,m))==0, error('empty label(s)'); end
         if flag_plot

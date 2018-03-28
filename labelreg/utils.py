@@ -68,7 +68,7 @@ def compute_binary_dice(input1, input2):
     vol1 = tf.reduce_sum(tf.to_float(mask1), axis=[1, 2, 3, 4])
     vol2 = tf.reduce_sum(tf.to_float(mask2), axis=[1, 2, 3, 4])
     dice = tf.reduce_sum(tf.to_float(mask1 & mask2), axis=[1, 2, 3, 4])*2 / (vol1+vol2)
-    return dice, vol1, vol2
+    return dice
 
 
 def compute_centroid_distance(input1, input2, grid=None):
