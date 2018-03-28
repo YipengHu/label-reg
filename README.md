@@ -2,15 +2,15 @@
 
 
 ## Introduction
-This is a tutorial aiming to use minimum and mostly self-explanatory scripts to describe the implementation of the deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was published in [Hu et al ISBI2018][Hu2018b]). A full re-implementation with many other unitilities is available at [NiftyNet platform][niftynet]. The sections are organised as follows:
+This is a tutorial aiming to use minimum and mostly self-explanatory scripts to describe the implementation of the deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was published in [Hu et al ISBI2018][Hu2018b]). A full re-implementation with many other unitilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
 
 * [1. Multimodal Image Registration](#section1)
-* [  ..* Example Data](#section1-1)
+* [     Example Data](#section1-1)
 * [2. Weakly-Supervised Dense Correspondence Learning](#section2)
-* [  ..* Label Similarity Measures](#section2-1)
-* [  ..* Training](#section2-2)
-* [  ..* Deformation Regularisation](#section2-3)
-* [  ..* Convolutional Neural Networks for Predicting Displacements](#section2-4)
+* [     Label Similarity Measures](#section2-1)
+* [     Deformation Regularisation](#section2-2)
+* [     Convolutional Neural Networks for Predicting Displacements](#section2-3)
+* [     Training](#section2-4)
 * [3. Try with Your Own Image-Label Data](#section3)
 * [4. Weakly-Supervised Registration Revisted](#section4)
 
@@ -42,17 +42,20 @@ In summary, for each numbered patient, there is a quartet of data, a 3D MR volum
 ## <a name="section2"></a>2 Weakly-Supervised Dense Correspondence Learning
 The idea of the wearkly-supervised learning is to use expert labels that represent the same anatomical structures. Depending on one's personal viewpoint, this type of label-driven methods may be considered as being "lazy" (e.g. compared to simulating complex biological deformation or engineering sophisticated similarity measure, used in supervised or unsupervised approches, respectively) or being "industrious" as a great amount manually-annotated anatomical structures in volumetric data are requried.
 
-While the goal is predicting DDF which we do not have ground-truth data for, the method is considered as "weakly-supervised" because the anatomical labels are used only in training so, at inference time, the registration does not need any labels (i.e. fully-automated image registration accepts a pair of images and predicts a DDF, without segmentation of any kind to aid the alignment or even initialisation). They are treated as if they are the "target labels" instead of "input predictors" in a classical regression analysis. Various formulations of the [weakly-supervised registration](#section9) is discussed and it is not in the papers! ;)
+While the goal is predicting DDF which we do not have ground-truth data for, the method is considered as "weakly-supervised" because the anatomical labels are used only in training. They are treated as if they are the "target labels" instead of "input predictors" in a classical regression analysis. Various formulations of the [weakly-supervised registration](#section9) is discussed and it is not in the papers! ;)
 
-The trick here is to use ONLY images as input to the neural network without labels, but the netowrk-predicted DDF can be used to transform the associated labels (from the same images) to match to each other, as shown in the picture:
+The trick here is to use _only_ images (moving and fixed) as input to the neural network without any labels, but the netowrk-predicted DDF can be used to transform the associated labels (from the same images) to match to each other, as shown in the picture:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/training.jpg "Training")
 
+As a result, labels are not requried in the subsequent inference, i.e. the registration predicting DDFs. It is, therfore, a fully-automated image registration accepts a pair of images and predicts a DDF, without segmentation of any kind to aid the alignment or even initialisation.
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/inference.jpg "Inference")
-
-The main problems with label-driven registration methods are labels representing corresponding structures are inherently sparse - among training cases, the same anatomical structures are not always present between a given moving and fixed image pair for training; when available, they neither cover the entire image domain nor detailed voxel correspondence. We solve the 
 
 
 ### <a name="section2-1"></a>Label Similarity Measures
+The main problems with label-driven registration methods are labels representing corresponding structures are inherently sparse - among training cases, the same anatomical structures are not always present between a given moving and fixed image pair for training; when available, they neither cover the entire image domain nor detailed voxel correspondence. The following two examples show that 
+![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_case1.jpg "Example Case 1")
+![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_case2.jpg "Example Case 2")
+
 Using cross-entropy to direct measure the loss between two given binary masks (representing the segmentation of the corresponding anatomies) has several problems:
 1 - 
 
