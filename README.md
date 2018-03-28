@@ -5,19 +5,14 @@
 This is a tutorial aiming to use minimum and self-explanatory scripts to describe the implementation of the deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was published in [Hu et al ISBI2018][Hu2018b]). A full re-implementation with many other unitilities is available at [NiftyNet platform][niftynet]. The sections are organised as follows:
 
 * [1 Multimodal Image Registration](#section1)
-* [2 Example Data](#section2)
-* [3 Weakly-Supervised Dense Correspondence Learning](#section3)
-* [4 Label Similarity Measures](#section4)
-* [5 Training](#section5)
-* [6 Deformation Regularisation](#section6)
-* [7 Convolutional Neural Networks for Predicting Displacements](#section7)
-* [8 Try with Your Own Image-Label Data](#section8)
-* [9 Weakly-Supervised Registration Revisted](#section9)
-
-
-[Hu2018a]: https://arxiv.org/abs/1711.01666
-[Hu2018b]: 
-[niftynet]: http://niftynet.io/
+* [Example Data](#section1-1)
+* [2 Weakly-Supervised Dense Correspondence Learning](#section2)
+* [Label Similarity Measures](#section2-1)
+* [Training](#section2-2)
+* [Deformation Regularisation](#section2-3)
+* [Convolutional Neural Networks for Predicting Displacements](#section2-4)
+* [3 Try with Your Own Image-Label Data](#section3)
+* [4 Weakly-Supervised Registration Revisted](#section4)
 
 
 ## <a name="section1"></a>1 Multimodal Image Registration
@@ -32,16 +27,15 @@ MR imaging, on the other hand, provides a better tissue contrast to localise whe
 The catch is that the MR imaging is not real-time, difficult and expensive to use in those procedures, so they are usually available before the procedure. Without discussing further justification, if the MR image can be aligned with the ultrasound image in real-time, the all the information then can be "registered" from the MR to ultrasound. It sounds like a good solution. It turns out a very difficult problem, stimulating a decade-long research topic. The [journal articule][Hu2018b] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy to implement.
 
 
-## <a name="section2"></a>2 - Example Data
+### <a name="section1-1"></a>2 - Example Data
 Due to medical data restrictions, we use some [fake (fewer and smaller) data][data] in this tutorial to mimic those from the prostate imaging application.
 First you need to unzip the data to folders, which you need to specify in [config.py][config_file] in order to run the code.
-[data]: 
-[config_file]: ./config.py
+
 
 In summary, for each numbered patient, we a quartet of data, a 3D MR volume, a 3D ultrasound volume, several landmarks delineated from MR and ultrasound volumes, the latter two being in 4D binary volumes. The fourth dimention indicates different types of landmarks, such as the prostate gland and the apex/base points (where urethra enters and exists prostate gland).
 
 
-## <a name="section3"></a>3 Weakly-Supervised Dense Correspondence Learning
+## <a name="section2"></a>3 Weakly-Supervised Dense Correspondence Learning
 The idea of the wearkly-supervised learning is to use expert labels that represent the same anatomical structures. Depending on one's personal viewpoint, this type of label-driven methods may be considered as being "lazy" (e.g. compared to simulating complex biological deformation or engineering sophisticated similarity measure, used in supervised or unsupervised approches, respectively) or being "industrious" as a great amount manually-annotated anatomical structures in volumetric data are requried.
 
 While the goal is predicting DDF which we do not have ground-truth data for, the method is considered as "weakly-supervised" because the anatomical labels are used only in training so, at inference time, the registration does not need any labels (i.e. fully-automated image registration accepts a pair of images and predicts a DDF, without segmentation of any kind to aid the alignment or even initialisation). They are treated as if they are the "target labels" instead of "input predictors" in a classical regression analysis. Various formulations of the [weakly-supervised registration](#section9) is discussed and it is not in the papers! ;)
@@ -53,10 +47,16 @@ The trick here is to use ONLY images as input to the neural network without labe
 The main problems with label-driven registration methods are labels representing corresponding structures are inherently sparse - among training cases, the same anatomical structures are not always present between a given moving and fixed image pair for training; when available, they neither cover the entire image domain nor detailed voxel correspondence. We solve the 
 
 
-## <a name="section4"></a>4 Label Similarity Measures
+### <a name="section2-1"></a>4 Label Similarity Measures
 Using cross-entropy to direct measure the loss between two given binary masks (representing the segmentation of the corresponding anatomies) has several problems:
 1 - 
 
+
+[data]: 
+[config_file]: ./config.py
+[Hu2018a]: 
+[Hu2018b]: https://arxiv.org/abs/1711.01666
+[niftynet]: http://niftynet.io/
 
 
 
