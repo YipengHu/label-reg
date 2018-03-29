@@ -88,8 +88,7 @@ def ddf_summand(input_, ch_in, shape_out, name='ddf_summand'):
 
 
 # layers
-def fully_connected(input_, length_out, name='fully_connected'):
-    initial_bias_global = 0.0
+def fully_connected(input_, length_out, initial_bias_global=0.0, name='fully_connected'):
     initial_std_global = 0.0
     input_size = input_.shape.as_list()
     with tf.variable_scope(name):

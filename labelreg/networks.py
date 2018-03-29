@@ -14,6 +14,7 @@ def build_network(network_type, **kwargs):
 
 
 class BaseNet:
+
     def __init__(self, minibatch_size, image_moving, image_fixed):
         self.minibatch_size = minibatch_size
         self.image_size = image_fixed.shape.as_list()[1:4]
@@ -47,18 +48,21 @@ class LocalNet(BaseNet):
         self.ddf = tf.reduce_sum(tf.stack([layer.ddf_summand(hm[4-idx], nc[idx], self.image_size, name='sum_%d' % idx)
                                            for idx in self.ddf_levels],
                                           axis=5), axis=5)
+        self.grid_warped = self.grid_ref + self.ddf
 
     def warp_image(self, input_):
         if input_ is None:
             input_ = self.image_moving
-        return util.resample_linear(input_, self.grid_ref+self.ddf)
+        return util.resample_linear(input_, self.grid_warped)
 
 
 class GlobalNet(BaseNet):
+
     def __init__(self, **kwargs):
         BaseNet.__init__(self, **kwargs)
         # defaults
         self.num_channel_initial_global = 8
+        self.transform_initial = [1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0.]
 
         nc = [int(self.num_channel_initial_global * (2 ** i)) for i in range(5)]
         h0, hc0 = layer.downsample_resnet_block(self.input_layer, 2, nc[0], k_conv0=[7, 7, 7], name='global_down_0')
@@ -66,7 +70,7 @@ class GlobalNet(BaseNet):
         h2, hc2 = layer.downsample_resnet_block(h1, nc[1], nc[2], name='global_down_2')
         h3, hc3 = layer.downsample_resnet_block(h2, nc[2], nc[3], name='global_down_3')
         h4 = layer.conv3_block(h3, nc[3], nc[4], name='global_deep_4')
-        theta = layer.fully_connected(h4, 12, name='global_project_0')
+        theta = layer.fully_connected(h4, 12, self.transform_initial, name='global_project_0')
 
         self.grid_warped = util.warp_grid(self.grid_ref, theta)
         self.ddf = self.grid_warped - self.grid_ref
@@ -78,6 +82,7 @@ class GlobalNet(BaseNet):
 
 
 class CompositeNet(BaseNet):
+
     def __init__(self, **kwargs):
         BaseNet.__init__(self, **kwargs)
         # defaults
@@ -89,9 +94,11 @@ class CompositeNet(BaseNet):
                              image_fixed=self.image_fixed,
                              ddf_levels=self.ddf_levels)
 
-        self.ddf = global_net.grid_warped + local_net.ddf
+        self.grid_warped = global_net.grid_warped + local_net.ddf
+        self.ddf = self.grid_warped - self.grid_ref
 
     def warp_image(self, input_):
         if input_ is None:
             input_ = self.image_moving
-        return util.resample_linear(input_, self.grid_ref+self.ddf)
+        return util.resample_linear(input_, self.grid_warped)
+
