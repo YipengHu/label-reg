@@ -30,13 +30,13 @@ def conv3_block(input_, ch_in, ch_out, k_conv=None, strides=None, name='conv3_bl
     if strides is None:
         strides = [1, 1, 1, 1, 1]
     with tf.variable_scope(name):
-        w = var_conv_kernel(ch_in, ch_out, k_conv, name=name)
+        w = var_conv_kernel(ch_in, ch_out, k_conv)
         return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(input_, w, strides, "SAME")))
 
 
 def deconv3_block(input_, ch_in, ch_out, shape_out, strides, name='deconv3_block'):
     with tf.variable_scope(name):
-        w = var_conv_kernel(ch_in, ch_out, name=name)
+        w = var_conv_kernel(ch_in, ch_out)
         return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d_transpose(input_, w, shape_out, strides, "SAME")))
 
 
@@ -48,14 +48,14 @@ def downsample_resnet_block(input_, ch_in, ch_out, k_conv0=None, use_pooling=Tru
     with tf.variable_scope(name):
         h0 = conv3_block(input_, ch_in, ch_out, k_conv0, name='W0')
         r1 = conv3_block(h0, ch_out, ch_out, name='WR1')
-        wr2 = var_conv_kernel(ch_out, ch_out, name='WR2')
+        wr2 = var_conv_kernel(ch_out, ch_out)
         r2 = tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(r1, wr2, strides1, "SAME")) + h0)
         if use_pooling:
             k_pool = [1, 2, 2, 2, 1]
             h1 = tf.nn.max_pool3d(r2, k_pool, strides2, padding="SAME")
         else:
             w1 = var_conv_kernel(ch_out, ch_out)
-            h1 = conv3_block(r2, w1, strides2)
+            h1 = conv3_block(r2, w1, strides2, name='W1')
         return h1, h0
 
 
@@ -64,12 +64,12 @@ def upsample_resnet_block(input_, input_skip, ch_in, ch_out, use_additive_upsamp
     strides2 = [1, 2, 2, 2, 1]
     size_out = input_skip.shape.as_list()
     with tf.variable_scope(name):
-        h0 = deconv3_block(input_, ch_out, ch_in, size_out, strides2, name='W0')
+        h0 = deconv3_block(input_, ch_out, ch_in, size_out, strides2)
         if use_additive_upsampling:
             h0 += additive_up_sampling(input_, size_out[1:4])
         r1 = h0 + input_skip
-        r2 = conv3_block(h0, ch_out, ch_out, name='WR1')
-        wr2 = var_conv_kernel(ch_out, ch_out, name='WR2')
+        r2 = conv3_block(h0, ch_out, ch_out)
+        wr2 = var_conv_kernel(ch_out, ch_out)
         h1 = tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(r2, wr2, strides1, "SAME")) + r1)
         return h1
 

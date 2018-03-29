@@ -5,15 +5,16 @@ import time
 import config
 import labelreg.helpers as helper
 import labelreg.networks as network
-import labelreg.losses as loss
 import labelreg.utils as util
+import labelreg.losses as loss
 
 
 # 1 - data
-reader_moving_image, reader_moving_label = helper.get_data_readers(config.Data.dir_moving_image,
-                                                                   config.Data.dir_moving_label)
-reader_fixed_image, reader_fixed_label = helper.get_data_readers(config.Data.dir_fixed_image,
-                                                                 config.Data.dir_fixed_label)
+reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label = helper.get_data_readers(
+    config.Data.dir_moving_image,
+    config.Data.dir_fixed_image,
+    config.Data.dir_moving_label,
+    config.Data.dir_fixed_label)
 
 
 # 2 - graph
@@ -46,8 +47,7 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config.Loss.
                                                     label_moving=warped_moving_label,
                                                     label_fixed=input_fixed_label,
                                                     network_type=config.Network.network_type,
-                                                    ddf=reg_net.ddf
-                                                    )
+                                                    ddf=reg_net.ddf)
 
 train_op = tf.train.AdamOptimizer(config.Train.learning_rate).minimize(loss_similarity+loss_regulariser)
 
@@ -59,9 +59,9 @@ dist = util.compute_centroid_distance(warped_moving_label, input_fixed_label)
 num_minibatch = int(reader_moving_label.num_data/config.Train.minibatch_size)
 train_indices = [i for i in range(reader_moving_label.num_data)]
 
+saver = tf.train.Saver(max_to_keep=1)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
-
 for step in range(config.Train.total_iterations):
 
     if step in range(0, config.Train.total_iterations, num_minibatch):
@@ -80,7 +80,8 @@ for step in range(config.Train.total_iterations):
                  ph_fixed_affine: helper.random_transform_generator(config.Train.minibatch_size)}
 
     sess.run(train_op, feed_dict=trainFeed)
-    if step in range(0, config.Train.total_iterations, config.Train.info_print_freq):
+
+    if step in range(0, config.Train.total_iterations, config.Train.freq_info_print):
         current_time = time.asctime(time.gmtime())
         loss_similarity_train, loss_regulariser_train, dice_train, dist_train = sess.run(
             [loss_similarity,
@@ -99,6 +100,10 @@ for step in range(config.Train.total_iterations):
         print('  Dice: %s' % dice_train)
         print('  Distance: %s' % dist_train)
         print('  Image-label indices: %s - %s' % (case_indices, label_indices))
+
+    if step in range(0, config.Train.total_iterations, config.Train.freq_model_save):
+        save_path = saver.save(sess, config.Train.file_model_save, write_meta_graph=False)
+        print("Model saved in: %s" % save_path)
 
 """
     # debug:

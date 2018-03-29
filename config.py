@@ -24,5 +24,13 @@ class Train:
     minibatch_size = 4
     learning_rate = 1e-5
     # output
-    info_print_freq = 100
-    dir_model_save = os.path.join(os.environ['HOME'], 'git/label-reg-demo/model')
+    freq_info_print = 100
+    freq_model_save = 500
+    file_model_save = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/model.ckpt')
+
+
+class Inference:
+    file_model_saved = Train.file_model_save
+    dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/test/mr_images')
+    dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/test/us_images')
+    file_ddf_save = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/ddf')
