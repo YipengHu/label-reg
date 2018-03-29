@@ -2,41 +2,41 @@
 
 
 ## Introduction
-This is a tutorial aiming to use minimum and mostly self-explanatory scripts to describe the implementation of the deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was published in [Hu et al ISBI2018][Hu2018b]). A full re-implementation with many other unitilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
+This tutorial aims to use minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was in [Hu et al ISBI2018][Hu2018b]). An efficient re-implementation with many other unitilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
 
 * [**1. Multimodal Image Registration**](#section1)
-* [     Example Data](#section1-1)
+* [     - Example Data](#section1-1)
 * [**2. Weakly-Supervised Dense Correspondence Learning**](#section2)
-* [     Label Similarity Measures](#section2-1)
-* [     Deformation Regularisation](#section2-2)
-* [     Convolutional Neural Networks for Predicting Displacements](#section2-3)
-* [     Training](#section2-4)
+* [     - Label Similarity Measures](#section2-1)
+* [     - Convolutional Neural Networks for Predicting Displacements](#section2-2)
+* [     - Deformation Regularisation](#section2-3)
+* [     - Training and Inference](#section2-4)
 * [**3. Try with Your Own Image-Label Data**](#section3)
 * [**4. Weakly-Supervised Registration Revisted**](#section4)
 
 
 ## <a name="section1"></a>1 Multimodal Image Registration
-Medical image registration aims to find a dense displacemnt field (DDF), such that a given "moving image" can be warped (transformed using the predicted DDF) to match a second "fixed image", that is, the corresponding anatomical structures are in the same spatial location.
+Medical image registration aims to find a dense displacemnt field (DDF), such that a given "moving image" can be warped (transformed using the predicted DDF) to match a second "fixed image", that is, the corresponding anatomical structures are in the same spatial location. 
 
 The definition of "multimodal" varies from changing of imaging parameters (such as MR sequancing or contrast agents) to images from different scanners. An example application here is to support 3D-ultrasound-guided intervention for prostate cancer patients. The ultrasound image looks like this:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_us.jpg "Ultrasound Image Volume")
+In these procedures, the urologists woulkd like to know where the suspicious regions are, so they can take a tissue sample to confirm pathology, i.e. biopsy, or they may treat certain small areas such as a tumour, i.e. focal therapy. They also want to avoid other healthy delicate srrounding or internal structures such as nerves, urethra, rectum and bladder. However, from ultrasound imaging, it is hard enough to work out the boundaries of the prostate gland, let alone the detailed anatomical and pathlogical structures. 
 
-In these procedures, the urologists woulkd like to know where the supicious regions are, so they can take a tissue sample to confirm pathology (i.e. biopsy), they may want to treat the small areas such as a tumour (i.e. focal therapy). They also want to avoid other healthy delicate srrounding or internal structures such as nerves, urethra, rectum, bladder. However, from ultrasound imaging, it is already difficult to work out where the prostate gland is, let alone the detailed anatomical and pathlogical structures. 
-
-MR imaging, on the other hand, provides a better tissue contrast to localise these interesting structures. Example slices of the 3D MR volume are here:
+MR imaging, on the other hand, provides a better tissue contrast to localise these interesting structures. Here are some example slices from a 3D MR volume:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_mr.jpg "MR Image Volume")
+The catch is that the MR imaging is difficult and expensive to use _during_ those procedures, and requires more imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is), so they are usually available only _before_ the procedure. If the MR image could be aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, becoming useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal articule][Hu2018b] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy to implement.
 
-The catch is that the MR imaging is difficult and expensive to use _during_ those procedures, and requires more imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is), so they are usually available only _before_ the procedure. If the MR image could be aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images. It sounds like a good solution. It turns out to be a very difficult problem, stimulating a decade-long research topic. The [journal articule][Hu2018b] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy to implement.
+Using the code from this tutorial, one should be able to re-produce the entire method from training to inference and, possibly, (with a bit linking-up with a GUI of choice) deploying the learned model for some real-time surgical guidance! 
 
 
 ### <a name="section1-1"></a>Example Data
-Due to medical data restrictions, we use some fake (fewer and smaller) data in this tutorial to mimic those from the prostate imaging application. You can download these by clicking the following link:
+Due to medical data restrictions, this tutorial uses some fake (fewer and smaller) data to mimic those from the prostate imaging application. You can download these by clicking the following link:
 
 [**Example data**][data]
 
 First unzip the downloaded data to folders, which you need to specify in [config.py][config_file] in order to run the code.
 
-In summary, for each numbered patient, there is a quartet of data, a 3D MR volume, a 3D ultrasound volume, several landmarks delineated from MR and ultrasound volumes, the latter two being in 4D binary volumes. The fourth dimention indicates different types of landmarks, such as the prostate gland and the apex/base points (where urethra enters and exists prostate gland).
+In summary, for each numbered patient, there is a quartet of data, a 3D MR volume, a 3D ultrasound volume, several landmarks delineated from MR and ultrasound volumes. The landmark volumes are in 4D with the fourth dimention indicates different types of landmarks, such as the prostate gland and the apex/base points (where urethra enters and exists prostate gland).
 
 
 ## <a name="section2"></a>2 Weakly-Supervised Dense Correspondence Learning
@@ -64,23 +64,55 @@ Here we adopted an efficient implementation of the differenciable Dice with spat
 Unfortunately, the use of the Dice lost the intuitive interpretation of the statistical distribution assumed on the label matching. Further discussion is in [Section 4 Weakly-Supervised Registration Revisted](#section4). However, multi-scale Dice works well in practice.
 
 
-### <a name="section2-2"></a>Deformation Regularisation
+### <a name="section2-2"></a>Convolutional Neural Networks for Predicting Displacements
+The module [networks.py][network_file] implements the networks and some variants in the papers.
+
+
+### <a name="section2-3"></a>Deformation Regularisation
 The main function implementing bending energy is *compute_bending_energy* in [losses.py][loss_file].
 
 
+### <a name="section2-4"></a>Training and Inference
+
+The two files, [training.py][training_file] and [inference.py][inference_file], contain all the necessary codes to perform the training and inference described above with simple but sufficient file IO support. Read the next section for more information.
+
+
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
-Anything readable by [NiBabel][nibabel] should be working with the DataReader
+Any file readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quatets of matmul([[moving], [fixed]], [[image, label]]) data should be organised as follows in order to run the code without modification:
+* The training data should be in saparate folders and the folder names are specified in the [config.py][config_file], for example:
+'''python
+dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_images')
+dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_images')
+dir_moving_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_labels')
+dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_labels')
+'''
+* They should have the same number of subjects, number of image volume files. The code currently assigns corresponding subjects by re-ordered file names. So it is easier to just rename them so that four files from the same patient/subject have the same file name;
+* Each image file contains a 3D image of the same shape;
+* Each label file contains a 4D volume with 4th dimension contains different landmarks delineated from the associated image volume. The segmented-foreground and background are represented by 0s and 1s, respectively;
+* The number of landmarks can be variable (and large) across subjects/patients, but has to be the sanme between _moving label_ and _fixed label_ from the same subject/patient, i.e. corresponding landmark pairs;
+* The image and each lanadmark (one 3D volume in the 4D label) should have the same shape, while the image and landmark do not need to have the same shape;
+* If inference or test is needed, also specify those folder names in Inference [config.py][config_file].
+
+That's it. Let me know if any problem.
+
+
+## <a name="section4"></a>4 Weakly-Supervised Registration Revisted
+First, the weakly-supervised registartion network training reflects an end of the human-label-driven vs unsupervised-pattern-recognition spectum. The prostate imaging application here is a typical exmaple that classical intensity-based similarity measures such as mutual information are simply do not work.
+
 
 [data]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/data.zip
 
 [config_file]: ./config.py
-[loss_file]: ./losses.py
+[loss_file]: ./labelreg/losses.py
+[network_file]: ./labelreg/networks.py
+[helper_file]: ./labelreg/helpers.py
+[inference_file]: ./inference.py
+[training_file]: ./training.py
 
 [Hu2018a]: https://arxiv.org/abs/1711.01666
 [Hu2018b]: https://arxiv.org/abs/1711.01666
 
 [niftynet]: http://niftynet.io/
 [nibabel]: http://nipy.org/nibabel/
-
 
 

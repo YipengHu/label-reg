@@ -105,43 +105,6 @@ for step in range(config.Train.total_iterations):
         save_path = saver.save(sess, config.Train.file_model_save, write_meta_graph=False)
         print("Model saved in: %s" % save_path)
 
-"""
-    # debug:
-    if True:
-        if step==0:
-            import nibabel as nib
-            import numpy as np
-
-        ph_moving_image_train, ph_fixed_image_train, ph_moving_label_train, ph_fixed_label_train = sess.run(
-            [ph_moving_image,
-             ph_fixed_image,
-             ph_moving_label,
-             ph_fixed_label],
-            feed_dict=trainFeed)
-        for idx in range(config.Train.minibatch_size):
-            nib.save(nib.Nifti1Image(ph_moving_image_train[idx, ...], np.diag([1, 1, 1, 1])),
-                     'ph_moving_image_train_%s.nii' % idx)
-            nib.save(nib.Nifti1Image(ph_fixed_image_train[idx, ...], np.diag([1, 1, 1, 1])),
-                     'ph_fixed_image_train_%s.nii' % idx)
-            nib.save(nib.Nifti1Image(ph_moving_label_train[idx, ...], np.diag([1, 1, 1, 1])),
-                     'ph_moving_label_train_%s.nii' % idx)
-            nib.save(nib.Nifti1Image(ph_fixed_label_train[idx, ...], np.diag([1, 1, 1, 1])),
-                     'ph_fixed_label_train_%s.nii' % idx)
-
-        warped_moving_label_train, ddf_train = sess.run(
-            [warped_moving_label,
-             reg_net.ddf],
-            feed_dict=trainFeed)
-        for idx in range(config.Train.minibatch_size):
-            nib.save(nib.Nifti1Image(ph_moving_image_train[idx, ...], np.diag([1, 1, 1, 1])),
-                     'ph_moving_image_train_%s.nii' % idx)
-            nib.save(nib.Nifti1Image(ph_fixed_image_train[idx, ...], np.diag([1, 1, 1, 1])),
-                     'ph_fixed_image_train_%s.nii' % idx)
-            nib.save(nib.Nifti1Image(ph_moving_label_train[idx, ...], np.diag([1, 1, 1, 1])),
-                     'ph_moving_label_train_%s.nii' % idx)
-            nib.save(nib.Nifti1Image(ph_fixed_label_train[idx, ...], np.diag([1, 1, 1, 1])),
-                     'ph_fixed_label_train_%s.nii' % idx)
-"""
 
 
 
