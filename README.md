@@ -10,7 +10,8 @@ This tutorial aims to use minimum and self-explanatory scripts to re-work the im
 * [     - Label Similarity Measures](#section2-1)
 * [     - Convolutional Neural Networks for Predicting Displacements](#section2-2)
 * [     - Deformation Regularisation](#section2-3)
-* [     - Training and Inference](#section2-4)
+* [     - Training](#section2-4)
+* [     - Inference](#section2-5)
 * [**3. Try with Your Own Image-Label Data**](#section3)
 * [**4. Weakly-Supervised Registration Revisted**](#section4)
 
@@ -72,20 +73,83 @@ The module [networks.py][network_file] implements the networks and some variants
 The main function implementing bending energy is *compute_bending_energy* in [losses.py][loss_file].
 
 
-### <a name="section2-4"></a>Training and Inference
+### <a name="section2-4"></a>Training
+* Training-Step-1 (data):
+Get the data reader objects and some of useful information with in the readers:
+```python
+reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label = helper.get_data_readers(
+    config.Data.dir_moving_image,
+    config.Data.dir_fixed_image,
+    config.Data.dir_moving_label,
+    config.Data.dir_fixed_label)
+```
+
+* Training-Step-2 (graph):
+Placeholders for both images and affine transformation parameters for data augmentation:
+```python
+ph_moving_image = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_moving_image.data_shape+[1])
+ph_fixed_image = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_fixed_image.data_shape+[1])
+ph_moving_affine = tf.placeholder(tf.float32, [config.Train.minibatch_size]+[1, 12])
+ph_fixed_affine = tf.placeholder(tf.float32, [config.Train.minibatch_size]+[1, 12])
+input_moving_image = util.warp_image_affine(ph_moving_image, ph_moving_affine)  # data augmentation
+input_fixed_image = util.warp_image_affine(ph_fixed_image, ph_fixed_affine)  # data augmentation
+```
+
+Now, the registration network:
+```python
+reg_net = network.build_network(network_type=config.Network.network_type,
+                                minibatch_size=config.Train.minibatch_size,
+                                image_moving=input_moving_image,
+                                image_fixed=input_fixed_image
+                                )
+```
+The network predicting the DDF is only part of the graph, but separating it is useful in [infernce](#section2-5) stage.
+
+The loss is constructed by first setting placeholders for label data (N.B. labels appear now and are not used in predicting DDF), with data augmentation using the same affine transformations:
+```python
+ph_moving_label = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_moving_image.data_shape+[1])
+ph_fixed_label = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_fixed_image.data_shape+[1])
+input_moving_label = util.warp_image_affine(ph_moving_label, ph_moving_affine)  # data augmentation
+input_fixed_label = util.warp_image_affine(ph_fixed_label, ph_fixed_affine)  # data augmentation
+```
+
+Warp the moving labels using the predicted DDFs:
+```python
+warped_moving_label = reg_net.warp_image(input_moving_label)
+```
+
+Then the label similarity can be computed between the warped moving labels and the fixed labels:
+```python
+loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config.Loss.similarity_type,
+                                                    similarity_scales=config.Loss.similarity_scales,
+                                                    regulariser_type=config.Loss.regulariser_type,
+                                                    regulariser_weight=config.Loss.regulariser_weight,
+                                                    label_moving=warped_moving_label,
+                                                    label_fixed=input_fixed_label,
+                                                    network_type=config.Network.network_type,
+                                                    ddf=reg_net.ddf)
+```
+
+
+The Dice scores should be consistently above 0.9 after a few thousand iterations on the gland segmentation labels (for convinience, they are always the first landmark, i.e. label_index=0, in the example data. But this is not a requirement in the random stage sampling.)
+
+
 
 The two files, [training.py][training_file] and [inference.py][inference_file], contain all the necessary codes to perform the training and inference described above with simple but sufficient file IO support. Read the next section for more information.
+
+
+### <a name="section2-5"></a>Inference
 
 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
 Any file readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quatets of matmul([[moving], [fixed]], [[image, label]]) data should be organised as follows in order to run the code without modification:
 * The training data should be in saparate folders and the folder names are specified in the [config.py][config_file], for example:
-'''python
+```python
 dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_images')
 dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_images')
 dir_moving_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_labels')
 dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_labels')
-'''
+```
 * They should have the same number of subjects, number of image volume files. The code currently assigns corresponding subjects by re-ordered file names. So it is easier to just rename them so that four files from the same patient/subject have the same file name;
 * Each image file contains a 3D image of the same shape;
 * Each label file contains a 4D volume with 4th dimension contains different landmarks delineated from the associated image volume. The segmented-foreground and background are represented by 0s and 1s, respectively;
