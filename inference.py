@@ -3,6 +3,7 @@ import tensorflow as tf
 import config
 import labelreg.helpers as helper
 import labelreg.networks as network
+import labelreg.apps as app
 
 
 # 1 - images to register
@@ -24,13 +25,19 @@ sess = tf.Session()
 saver.restore(sess, config.Inference.file_model_saved)
 
 
-# compute ddf for resampling
-testFeed = {ph_moving_image: reader_moving_image.get_data(),
-            ph_fixed_image: reader_fixed_image.get_data()}
+# 1 - compute ddf for resampling
+data_moving_image = reader_moving_image.get_data()
+data_fixed_image = reader_fixed_image.get_data()
+testFeed = {ph_moving_image: data_moving_image,
+            ph_fixed_image: data_fixed_image}
 ddf = sess.run(reg_net.ddf, feed_dict=testFeed)
+helper.write_images(ddf, config.Inference.dir_save, 'ddf')
 
-if config.Inference.file_ddf_save is not None:
-    import nibabel as nib
-    affine = [[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]]
-    [nib.save(nib.Nifti1Image(ddf[idx, ...], affine), 'ddf_%s.nii' % idx)
-     for idx in range(reader_moving_image.num_data)]
+# 2 - warp the test images
+warped_images = app.warp_volumes_by_ddf(data_moving_image, ddf)
+helper.write_images(warped_images, config.Inference.dir_save, 'warped_image')
+
+# 3 - warp test labels of gland segmentation, i.e. label_indices=0
+data_moving_label = helper.DataReader(config.Inference.dir_moving_label).get_data(label_indices=[0])
+warped_labels = app.warp_volumes_by_ddf(data_moving_label, ddf)
+helper.write_images(warped_labels, config.Inference.dir_save, 'warped_label')

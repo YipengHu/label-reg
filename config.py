@@ -2,10 +2,10 @@ import os
 
 
 class Data:
-    dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/mr_images')
-    dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/us_images')
-    dir_moving_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/mr_labels')
-    dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/us_labels')
+    dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_images')
+    dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_images')
+    dir_moving_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_labels')
+    dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_labels')
 
 
 class Network:
@@ -33,4 +33,8 @@ class Inference:
     file_model_saved = Train.file_model_save
     dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/test/mr_images')
     dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/test/us_images')
-    file_ddf_save = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/ddf')
+    dir_save = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/')
+    # for testing only
+    dir_moving_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/test/mr_labels')
+    dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/test/us_labels')
+

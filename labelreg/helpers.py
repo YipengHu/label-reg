@@ -1,9 +1,7 @@
 
 import numpy as np
 import nibabel as nib
-import config
 import os
-import random
 
 
 def get_data_readers(dir_image0, dir_image1, dir_label0=None, dir_label1=None):
@@ -52,12 +50,14 @@ class DataReader:
         return [self.num_labels[i] for i in case_indices]
 
     def get_data(self, case_indices=None, label_indices=None):
-        # todo: check the supplied label_indices smaller than num_labels
         if case_indices is None:
             case_indices = range(self.num_data)
+        # todo: check the supplied label_indices smaller than num_labels
         if label_indices is None:  # e.g. images only
-            data = [np.asarray(self.file_objects[i].dataobj) for i in case_indices]  # np.asarray(proxy_img.dataobj)
+            data = [np.asarray(self.file_objects[i].dataobj) for i in case_indices]
         else:
+            if len(label_indices) == 1:
+                label_indices *= self.num_data
             data = [self.file_objects[i].dataobj[..., j] if self.num_labels[i] > 1
                     else np.asarray(self.file_objects[i].dataobj)
                     for (i, j) in zip(case_indices, label_indices)]
@@ -100,3 +100,13 @@ def identity_transform_vector():
 
 def get_padded_shape(size, stride):
     return [int(np.ceil(size[i] / stride)) for i in range(len(size))]
+
+
+def write_images(input_, file_path=None, file_prefix=''):
+    if file_path is not None:
+        batch_size = input_.shape[0]
+        affine = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]
+        [nib.save(nib.Nifti1Image(input_[idx, ...], affine),
+                  os.path.join(file_path,
+                               file_prefix + '%s.nii' % idx))
+         for idx in range(batch_size)]
