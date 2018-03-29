@@ -9,7 +9,7 @@ class Data:
 
 
 class Network:
-    network_type = 'global'  # 'global', 'local', 'composite'
+    network_type = 'local'  # 'global', 'local', 'composite'
 
 
 class Loss:

@@ -42,7 +42,7 @@ In summary, for each numbered patient, there is a quartet of data, a 3D MR volum
 ## <a name="section2"></a>2 Weakly-Supervised Dense Correspondence Learning
 The idea of the wearkly-supervised learning is to use expert labels that represent the same anatomical structures. Depending on one's personal viewpoint, this type of label-driven methods may be considered as being "lazy" (e.g. compared to simulating complex biological deformation or engineering sophisticated similarity measure, used in supervised or unsupervised approches, respectively) or being "industrious" as a great amount manually-annotated anatomical structures in volumetric data are requried.
 
-While the goal is predicting DDF which we do not have ground-truth data for, the method is considered as "weakly-supervised" because the anatomical labels are used only in training. They are treated as if they are the "target labels" instead of "input predictors" in a classical regression analysis. Various formulations of the [weakly-supervised registration](#section9) is discussed and it is not in the papers! ;)
+While the goal is predicting DDF which we do not have ground-truth data for, the method is considered as "weakly-supervised" because the anatomical labels are used only in training. They are treated as if they are the "target labels" instead of "input predictors" in a classical regression analysis. Various formulations of the [weakly-supervised registration](#section4) is discussed and it is not in the papers! ;)
 
 The trick here is to use _only_ images (moving and fixed) as input to the neural network without any labels, but the netowrk-predicted DDF can be used to transform the associated labels (from the same images) to match to each other, as shown in the picture:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/training.jpg "Training")
@@ -54,19 +54,31 @@ As a result, labels are not requried in the subsequent inference, i.e. the regis
 ### <a name="section2-1"></a>Label Similarity Measures
 The main problems with label-driven registration methods are labels representing corresponding structures are inherently sparse - among training cases, the same anatomical structures are not always present between a given moving and fixed image pair for training; when available, they neither cover the entire image domain nor detailed voxel correspondence. The following two examples show that 
 
-![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_case1.jpg "Example Case 1")
-![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_case2.jpg "Example Case 2")
+![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_2cases.jpg "Example Landmarks")
 
 Using cross-entropy to direct measure the loss between two given binary masks (representing the segmentation of the corresponding anatomies) has several problems:
 1 - 
+
+Here we adopted an efficient implementation of the differenciable Dice with spatial smoothing on labels to combat these problems. The entrance function for the implemented multi-scale Dice is *multi_scale_loss* in [losses.py][loss_file].
+
+Unfortunately, the use of the Dice lost the intuitive interpretation of the statistical distribution assumed on the label matching. Further discussion is in [Section 4 Weakly-Supervised Registration Revisted](#section4). However, multi-scale Dice works well in practice.
+
+
+### <a name="section2-2"></a>Deformation Regularisation
+The main function implementing bending energy is *compute_bending_energy* in [losses.py][loss_file].
+
 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
 Anything readable by [NiBabel][nibabel] should be working with the DataReader
 
 [data]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/data.zip
+
 [config_file]: ./config.py
+[loss_file]: ./losses.py
+
 [Hu2018a]: https://arxiv.org/abs/1711.01666
 [Hu2018b]: https://arxiv.org/abs/1711.01666
+
 [niftynet]: http://niftynet.io/
 [nibabel]: http://nipy.org/nibabel/
 
