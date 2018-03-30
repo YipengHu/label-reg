@@ -2,7 +2,7 @@
 
 
 ## Introduction
-This tutorial aims to use minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was in [Hu et al ISBI2018][Hu2018b]). An efficient re-implementation with many other unitilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
+This tutorial aims to use minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was in [Hu et al ISBI2018][Hu2018b]). An efficient re-implementation with many other utilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
 
 * [**1. Multimodal Image Registration**](#section1)
 * [     - Example Data](#section1-1)
@@ -142,7 +142,7 @@ The two files, [training.py][training_file] and [inference.py][inference_file], 
 
 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
-Any file readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quatets of matmul([[moving], [fixed]], [[image, label]]) data should be organised as follows in order to run the code without modification:
+Files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quatets of matmul([[moving], [fixed]], [[image, label]]) data should be organised as follows in order to run the code without modification:
 * The training data should be in saparate folders and the folder names are specified in the [config.py][config_file], for example:
 ```python
 dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_images')
