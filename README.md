@@ -200,12 +200,14 @@ Example code is in the top-level [inference.py][inference_file], which can also 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
 Files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quartets of matmul([[moving], [fixed]], [[image, label]]) data should be organised as follows in order to run the code without modification:
 * The training data should be in separate folders and the folder names are specified in the [config.py][config_file], for example:
+
 ```python
 dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_images')
 dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_images')
 dir_moving_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_labels')
 dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_labels')
 ```
+
 * They should have the same number of subjects, number of image volume files. The code currently assigns corresponding subjects by re-ordered file names. So it is easier to just rename them so that four files from the same patient/subject have the same file name;
 * Each image file contains a 3D image of the same shape;
 * Each label file contains a 4D volume with 4th dimension contains different landmarks delineated from the associated image volume. The segmented-foreground and background are represented by 0s and 1s, respectively;
