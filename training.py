@@ -29,8 +29,7 @@ input_fixed_image = util.warp_image_affine(ph_fixed_image, ph_fixed_affine)  # d
 reg_net = network.build_network(network_type=config.Network.network_type,
                                 minibatch_size=config.Train.minibatch_size,
                                 image_moving=input_moving_image,
-                                image_fixed=input_fixed_image
-                                )
+                                image_fixed=input_fixed_image)
 
 # loss
 ph_moving_label = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_moving_image.data_shape+[1])

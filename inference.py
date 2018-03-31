@@ -26,15 +26,13 @@ saver.restore(sess, config.Inference.file_model_saved)
 
 
 # 1 - compute ddf for resampling
-data_moving_image = reader_moving_image.get_data()
-data_fixed_image = reader_fixed_image.get_data()
-testFeed = {ph_moving_image: data_moving_image,
-            ph_fixed_image: data_fixed_image}
+testFeed = {ph_moving_image: reader_moving_image.get_data(),
+            ph_fixed_image: reader_fixed_image.get_data()}
 ddf = sess.run(reg_net.ddf, feed_dict=testFeed)
 helper.write_images(ddf, config.Inference.dir_save, 'ddf')
 
 # 2 - warp the test images
-warped_images = app.warp_volumes_by_ddf(data_moving_image, ddf)
+warped_images = app.warp_volumes_by_ddf(reader_moving_image.get_data(), ddf)
 helper.write_images(warped_images, config.Inference.dir_save, 'warped_image')
 
 # 3 - warp test labels of gland segmentation, i.e. label_indices=0
