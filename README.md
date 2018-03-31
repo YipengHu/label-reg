@@ -76,6 +76,7 @@ The main function implementing bending energy is *compute_bending_energy* in [lo
 ### <a name="section2-4"></a>Training
 * Training-Step-1 (data):
 Get the data reader objects and some of useful information with in the readers:
+
 ```python
 reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label = helper.get_data_readers(
     config.Data.dir_moving_image,
@@ -86,6 +87,7 @@ reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label
 
 * Training-Step-2 (graph):
 Placeholders for both images and affine transformation parameters for data augmentation:
+
 ```python
 ph_moving_image = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_moving_image.data_shape+[1])
 ph_fixed_image = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_fixed_image.data_shape+[1])
@@ -96,6 +98,7 @@ input_fixed_image = util.warp_image_affine(ph_fixed_image, ph_fixed_affine)  # d
 ```
 
 Now, the registration network:
+
 ```python
 reg_net = network.build_network(network_type=config.Network.network_type,
                                 minibatch_size=config.Train.minibatch_size,
@@ -105,6 +108,7 @@ reg_net = network.build_network(network_type=config.Network.network_type,
 The network predicting the DDF is only part of the graph, but separating it is useful in [inference](#section2-5) stage.
 
 The loss is constructed by first setting placeholders for label data (N.B. labels appear now and are not used in predicting DDF), with data augmentation using the same affine transformations:
+
 ```python
 ph_moving_label = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_moving_image.data_shape+[1])
 ph_fixed_label = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_fixed_image.data_shape+[1])
@@ -113,11 +117,13 @@ input_fixed_label = util.warp_image_affine(ph_fixed_label, ph_fixed_affine)  # d
 ```
 
 Warp the moving labels using the predicted DDFs:
+
 ```python
 warped_moving_label = reg_net.warp_image(input_moving_label)
 ```
 
 The label similarity measure and the weighted deformation regularisation can then be constructed between the warped moving labels and the fixed labels:
+
 ```python
 loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config.Loss.similarity_type,
                                                     similarity_scales=config.Loss.similarity_scales,
@@ -131,13 +137,13 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config.Loss.
 
 * Training-Step-3 (Optimisation):
 Adam is the favourate optimiser here with default settings with an initial learning rate around 1e-5:
+
 ```python
 train_op = tf.train.AdamOptimizer(config.Train.learning_rate).minimize(loss_similarity+loss_regulariser)
 ```
 
-Two utility computing nodes are also included for monitoring the training process. Here the binary Dice, _dice_, and distance between centroids, _dist_.
-
 The main itertive minibatch gradient descent is fairly standard, except for the two-stage clustering sampling when sampling the label data, after the image pairs being sampled. Because different image pairs have different numbers of labels - a consequence for exploiting anatomical knowlege - further discussed in the papers. A standard minibatch optimisation can be trivially modified to sample uniformly a label pair (moving and fixed) from those available label pairs delineated on each (first-stage) sampled image pair (i.e. a subject/patient). This can be as simple as:
+
 ```python
     # in each iteration step
     minibatch_idx = step % num_minibatch
@@ -146,6 +152,7 @@ The main itertive minibatch gradient descent is fairly standard, except for the 
     label_indices = [random.randrange(reader_moving_label.num_labels[i]) for i in case_indices]
 ```
 _num_labels[i]_ is the number of available labels for ith image pair with:
+
 ```python
 num_minibatch = int(reader_moving_label.num_data/config.Train.minibatch_size)
 train_indices = [i for i in range(reader_moving_label.num_data)]
@@ -153,12 +160,14 @@ train_indices = [i for i in range(reader_moving_label.num_data)]
 
 First, it uses paralell computing resources efficiently without further non-trivial implementation, compared with an online algorithm averaging over all available labels at each iteration; second, it may provide regularisation due to the added noise in sampling labels. The two-stage sampling readily scales to large number of labels. This makes sense because, much like stochastic gradent descent, the computed gradient also is an unbiased estimator of the btach gradient (defined on entire training data set). This results a compact minibatch data feeder of image-label quartets with fixed size, in the placehoders in the previous steps.
 
+Two utility computing nodes are also included for monitoring the training process. Here the binary Dice, _dice_, and distance between centroids, _dist_, implemented in [utils.py][util_file]. 
 
 The Dice scores should be consistently above 0.9 after a few thousand iterations on the gland segmentation labels (for convenience, they are always the first landmark, i.e. label_index=0, in the example data. But this is not a requirement in the random stage sampling.) The top-level file, [training.py][training_file] contains all the necessary code to perform the training described above with simple but sufficient file IO support. Read the [Section 3](#section3) for more information on how to run the code with real imaging data.
 
 
 ### <a name="section2-5"></a>Inference
 Thinking about the difference between the inference and the training is a particularly effective way to obtain insight of the registration method. The first difference is on the data. While the training requries moving-fixed-image-label quartets, inference only needs a pair of moving and fixed images:
+
 ```python
 reader_moving_image, reader_fixed_image, _, _ = helper.get_data_readers(config.Inference.dir_moving_image,
                                                                         config.Inference.dir_fixed_image)
@@ -167,6 +176,7 @@ ph_fixed_image = tf.placeholder(tf.float32, [reader_fixed_image.num_data]+reader
 ```
 
 First, restore the trained network (only the part of the _reg_net_ for predicting the DDF and weights):
+
 ```python
 reg_net = network.build_network(network_type=config.Network.network_type,
                                 minibatch_size=reader_moving_image.num_data,
@@ -179,6 +189,7 @@ saver.restore(sess, config.Inference.file_model_saved)
 ```
 
 Then, the DDF can be computed using one-pass evaluation:
+
 ```python
 testFeed = {ph_moving_image: reader_moving_image.get_data(),
             ph_fixed_image: reader_fixed_image.get_data()}
@@ -187,6 +198,7 @@ ddf = sess.run(reg_net.ddf, feed_dict=testFeed)
 And, that's it for inference.
 
 Depending on the application, the predicted DDF can be used in many ways, warping the moving MR images given a real-time ultrasound image, warping a bimary image representing some segmentation on the moving MR image (such as a tumour), transforming the real-time information (such as surgical instrument position) back to the MR image space or transforming some MR-defined point cloud to ultrasound imaging coordinates (note in this case a inverting of the non-linear transformation may be required), to name a few. This tutorial uses a demo function using TensorFlow ([apps.py][app_file]) to warp MR-defined images and labels in batches on GPU:
+
 ```python
 warped_images = app.warp_volumes_by_ddf(reader_moving_image.get_data(), ddf)
 
@@ -198,7 +210,10 @@ Example code is in the top-level [inference.py][inference_file], which can also 
 
 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
-Files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quartets of matmul([[moving], [fixed]], [[image, label]]) data should be organised as follows in order to run the code without modification:
+[TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, time and nibabel (for file IO only). All are available with little issue if not already instaled. 
+
+Files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quartets of moving-fixed image and label data should be organised as follows in order to run the code without modification:
+
 * The training data should be in separate folders and the folder names are specified in the [config.py][config_file], for example:
 
 ```python
@@ -228,6 +243,7 @@ First, the weakly-supervised registration network training reflects an end of th
 [loss_file]: ./labelreg/losses.py
 [network_file]: ./labelreg/networks.py
 [helper_file]: ./labelreg/helpers.py
+[util_file]: ./labelreg/utils.py
 [inference_file]: ./inference.py
 [training_file]: ./training.py
 [app_file]: ./labelreg/apps.py
@@ -237,5 +253,6 @@ First, the weakly-supervised registration network training reflects an end of th
 
 [niftynet]: http://niftynet.io/
 [nibabel]: http://nipy.org/nibabel/
+[tensorflow_install]: https://www.tensorflow.org/install/
 
 
