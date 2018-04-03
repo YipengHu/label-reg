@@ -35,7 +35,7 @@ Due to medical data restrictions, this tutorial uses some fake (fewer and smalle
 
 [**Download example data**][data]
 
-First unzip the downloaded data to folders, which you need to specify in [config.py][config_file] in order to run the code.
+First unzip the downloaded data to folders, which you need to specify in [config_demo.ini][config_file] in order to run the code.
 
 In summary, for each numbered patient, there is a quartet of data, a 3D MR volume, a 3D ultrasound volume, several landmarks delineated from MR and ultrasound volumes. The landmark volumes are in 4D with the fourth dimension indicates different types of landmarks, such as the prostate gland and the apex/base points (where urethra enters and exists prostate gland).
 

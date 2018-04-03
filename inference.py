@@ -28,17 +28,17 @@ sess = tf.Session()
 saver.restore(sess, config['Inference']['file_model_saved'])
 
 
-# 1 - compute ddf for resampling
+# 3 - compute ddf
 testFeed = {ph_moving_image: reader_moving_image.get_data(),
             ph_fixed_image: reader_fixed_image.get_data()}
 ddf = sess.run(reg_net.ddf, feed_dict=testFeed)
 helper.write_images(ddf, config['Inference']['dir_save'], 'ddf')
 
-# 2 - warp the test images
+# warp the test images
 warped_images = app.warp_volumes_by_ddf(reader_moving_image.get_data(), ddf)
 helper.write_images(warped_images, config['Inference']['dir_save'], 'warped_image')
 
-# 3 - warp test labels of gland segmentation, i.e. label_indices=0
+# warp test labels of gland segmentation, i.e. label_indices=0
 data_moving_label = helper.DataReader(config['Inference']['dir_moving_label']).get_data(label_indices=[0])
 warped_labels = app.warp_volumes_by_ddf(data_moving_label, ddf)
 helper.write_images(warped_labels, config['Inference']['dir_save'], 'warped_label')
