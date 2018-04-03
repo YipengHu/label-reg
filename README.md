@@ -81,39 +81,39 @@ Get the data reader objects and some of useful information with in the readers:
 
 ```python
 reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label = helper.get_data_readers(
-    config.Data.dir_moving_image,
-    config.Data.dir_fixed_image,
-    config.Data.dir_moving_label,
-    config.Data.dir_fixed_label)
+    '~/git/label-reg-demo/data/train/mr_images',
+    '~/git/label-reg-demo/data/train/us_images',
+    '~/git/label-reg-demo/data/train/mr_labels',
+    '~/git/label-reg-demo/data/train/us_labels')
 ```
 
 * Training-Step-2 (graph):
-Placeholders for both images and affine transformation parameters for data augmentation:
+Placeholders for **4** pairs of moving and fixed images and affine transformation parameters with size of **[1, 12]** for data augmentation:
 
 ```python
-ph_moving_image = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_moving_image.data_shape+[1])
-ph_fixed_image = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_fixed_image.data_shape+[1])
-ph_moving_affine = tf.placeholder(tf.float32, [config.Train.minibatch_size]+[1, 12])
-ph_fixed_affine = tf.placeholder(tf.float32, [config.Train.minibatch_size]+[1, 12])
+ph_moving_image = tf.placeholder(tf.float32, [4]+reader_moving_image.data_shape+[1])
+ph_fixed_image = tf.placeholder(tf.float32, [4]+reader_fixed_image.data_shape+[1])
+ph_moving_affine = tf.placeholder(tf.float32, [4]+[1, 12])
+ph_fixed_affine = tf.placeholder(tf.float32, [4]+[1, 12])
 input_moving_image = util.warp_image_affine(ph_moving_image, ph_moving_affine)  # data augmentation
 input_fixed_image = util.warp_image_affine(ph_fixed_image, ph_fixed_affine)  # data augmentation
 ```
 
-Now, the registration network:
+The **local** registration network is the default architecture:
 
 ```python
-reg_net = network.build_network(network_type=config.Network.network_type,
-                                minibatch_size=config.Train.minibatch_size,
+reg_net = network.build_network('local',
+                                minibatch_size=4,
                                 image_moving=input_moving_image,
                                 image_fixed=input_fixed_image)
 ```
-The network predicting the DDF is only part of the graph, but separating it is useful in [inference](#section2-5) stage.
+The network predicting the DDF is only part of the so-called _computation graph_, but separating it is useful in [inference](#section2-5) stage.
 
-The loss is constructed by first setting placeholders for label data (N.B. labels appear now and are not used in predicting DDF), with data augmentation using the same affine transformations:
+The loss function is constructed by first setting placeholders for label data (N.B. labels appear now and are not used in predicting DDF), with data augmentation using the same affine transformations:
 
 ```python
-ph_moving_label = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_moving_image.data_shape+[1])
-ph_fixed_label = tf.placeholder(tf.float32, [config.Train.minibatch_size]+reader_fixed_image.data_shape+[1])
+ph_moving_label = tf.placeholder(tf.float32, [4]+reader_moving_image.data_shape+[1])
+ph_fixed_label = tf.placeholder(tf.float32, [4]+reader_fixed_image.data_shape+[1])
 input_moving_label = util.warp_image_affine(ph_moving_label, ph_moving_affine)  # data augmentation
 input_fixed_label = util.warp_image_affine(ph_fixed_label, ph_fixed_affine)  # data augmentation
 ```
@@ -127,13 +127,13 @@ warped_moving_label = reg_net.warp_image(input_moving_label)
 The label similarity measure and the weighted deformation regularisation can then be constructed between the warped moving labels and the fixed labels:
 
 ```python
-loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config.Loss.similarity_type,
-                                                    similarity_scales=config.Loss.similarity_scales,
-                                                    regulariser_type=config.Loss.regulariser_type,
-                                                    regulariser_weight=config.Loss.regulariser_weight,
+loss_similarity, loss_regulariser = loss.build_loss(similarity_type='dice',
+                                                    similarity_scales=[0,1,2,4,8,16],
+                                                    regulariser_type='bending',
+                                                    regulariser_weight=0.5,
                                                     label_moving=warped_moving_label,
                                                     label_fixed=input_fixed_label,
-                                                    network_type=config.Network.network_type,
+                                                    network_type='local',
                                                     ddf=reg_net.ddf)
 ```
 
@@ -141,26 +141,25 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config.Loss.
 Adam is the favourate optimiser here with default settings with an initial learning rate around 1e-5:
 
 ```python
-train_op = tf.train.AdamOptimizer(config.Train.learning_rate).minimize(loss_similarity+loss_regulariser)
+train_op = tf.train.AdamOptimizer(1e-5).minimize(loss_similarity+loss_regulariser)
 ```
 
-The main itertive minibatch gradient descent is fairly standard, except for the two-stage clustering sampling when sampling the label data, after the image pairs being sampled. Because different image pairs have different numbers of labels - a consequence for exploiting anatomical knowlege - further discussed in the papers. A standard minibatch optimisation can be trivially modified to sample uniformly a label pair (moving and fixed) from those available label pairs delineated on each (first-stage) sampled image pair (i.e. a subject/patient). This can be as simple as:
+The main itertive minibatch gradient descent is fairly standard, except for the two-stage clustering sampling when sampling the label data, after the image pairs being sampled. This is useful because different image pairs have different numbers of labels, a consequence for exploiting _ad hoc_ anatomical labels, which was further discussed in the papers. Basically, this can form a compact training minibatch of image-label quartets with fixed size, enabling efficient use of the paralell computing resource, as in the placehoders in the previous steps. 
+
+A standard minibatch optimisation can be trivially modified to uniformly sample a label pair (moving and fixed) from those available label pairs delineated on each (first-stage) sampled image pair (i.e. a subject/patient). Again, assuming a minibatch size of 4 and _num_labels[i]_ is the number of available labels for ith image pair:
 
 ```python
     # in each iteration step
     minibatch_idx = step % num_minibatch
-    case_indices = train_indices[
-                    minibatch_idx * config.Train.minibatch_size:(minibatch_idx + 1) * config.Train.minibatch_size]
+    case_indices = train_indices[minibatch_idx*4:(minibatch_idx+1)*4]
     label_indices = [random.randrange(reader_moving_label.num_labels[i]) for i in case_indices]
 ```
-_num_labels[i]_ is the number of available labels for ith image pair with:
 
 ```python
-num_minibatch = int(reader_moving_label.num_data/config.Train.minibatch_size)
+num_minibatch = int(reader_moving_label.num_data/4)
 train_indices = [i for i in range(reader_moving_label.num_data)]
 ```
 
-First, it uses paralell computing resources efficiently without further non-trivial implementation, compared with an online algorithm averaging over all available labels at each iteration; second, it may provide regularisation due to the added noise in sampling labels. The two-stage sampling readily scales to large number of labels. This makes sense because, much like stochastic gradent descent, the computed gradient also is an unbiased estimator of the btach gradient (defined on entire training data set). This results a compact minibatch data feeder of image-label quartets with fixed size, in the placehoders in the previous steps.
 
 Two utility computing nodes are also included for monitoring the training process. Here the binary Dice, _dice_, and distance between centroids, _dist_, implemented in [utils.py][util_file]. 
 
@@ -168,11 +167,11 @@ The Dice scores should be consistently above 0.9 after a few thousand iterations
 
 
 ### <a name="section2-5"></a>Inference
-Thinking about the difference between the inference and the training is a particularly effective way to obtain insight of the registration method. The first difference is on the data. While the training requries moving-fixed-image-label quartets, inference only needs a pair of moving and fixed images:
+Considering the difference between the inference and the training is a particularly effective way to obtain insight of the registration method. The first difference is on the data. While the training requries moving-fixed-image-label quartets, inference only needs a pair of moving and fixed images:
 
 ```python
-reader_moving_image, reader_fixed_image, _, _ = helper.get_data_readers(config.Inference.dir_moving_image,
-                                                                        config.Inference.dir_fixed_image)
+reader_moving_image, reader_fixed_image, _, _ = helper.get_data_readers('~/git/label-reg-demo/data/test/mr_images',
+                                                                        '~/git/label-reg-demo/data/test/us_images')
 ph_moving_image = tf.placeholder(tf.float32, [reader_moving_image.num_data]+reader_moving_image.data_shape+[1])
 ph_fixed_image = tf.placeholder(tf.float32, [reader_fixed_image.num_data]+reader_fixed_image.data_shape+[1])
 ```
@@ -180,14 +179,14 @@ ph_fixed_image = tf.placeholder(tf.float32, [reader_fixed_image.num_data]+reader
 First, restore the trained network (only the part of the _reg_net_ for predicting the DDF and weights):
 
 ```python
-reg_net = network.build_network(network_type=config.Network.network_type,
+reg_net = network.build_network(network_type='local',
                                 minibatch_size=reader_moving_image.num_data,
                                 image_moving=ph_moving_image,
                                 image_fixed=ph_fixed_image)
 
 saver = tf.train.Saver()
 sess = tf.Session()
-saver.restore(sess, config.Inference.file_model_saved)
+saver.restore(sess, '~/git/label-reg-demo/data/model.ckpt')
 ```
 
 Then, the DDF can be computed using one-pass evaluation:
@@ -204,7 +203,7 @@ Depending on the application, the predicted DDF can be used in many ways, warpin
 ```python
 warped_images = app.warp_volumes_by_ddf(reader_moving_image.get_data(), ddf)
 
-data_moving_label = helper.DataReader(config.Inference.dir_moving_label).get_data(label_indices=[0])
+data_moving_label = helper.DataReader('~/git/label-reg-demo/data/test/mr_labels').get_data(label_indices=[0])
 warped_labels = app.warp_volumes_by_ddf(data_moving_label, ddf)
 ```
 
@@ -212,17 +211,18 @@ Example code is in the top-level [inference.py][inference_file], which can also 
 
 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
-[TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, time and nibabel (for file IO only). All are available with little issue if not already instaled. 
+[TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, time and nibabel (for file IO only). All are easily available if not already instaled. 
 
 Files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quartets of moving-fixed image and label data should be organised as follows in order to run the code without modification:
 
-* The training data should be in separate folders and the folder names are specified in the [config.py][config_file], for example:
+* The training data should be in separate folders and the folder names are specified under the [Data] section in the [config_demo.ini][config_file], for example:
 
-```python
-dir_moving_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_images')
-dir_fixed_image = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_images')
-dir_moving_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/mr_labels')
-dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/train/us_labels')
+```
+[Data]
+dir_moving_image = ~/git/label-reg-demo/data/train/mr_images
+dir_fixed_image = ~/git/label-reg-demo/data/train/us_images
+dir_moving_label = ~/git/label-reg-demo/data/train/mr_labels
+dir_fixed_label = ~/git/label-reg-demo/data/train/us_labels
 ```
 
 * They should have the same number of subjects, number of image volume files. The code currently assigns corresponding subjects by re-ordered file names. So it is easier to just rename them so that four files from the same patient/subject have the same file name;
@@ -230,7 +230,18 @@ dir_fixed_label = os.path.join(os.environ['HOME'], 'git/label-reg-demo/data/trai
 * Each label file contains a 4D volume with 4th dimension contains different landmarks delineated from the associated image volume. The segmented-foreground and background are represented by 0s and 1s, respectively;
 * The number of landmarks can be variable (and large) across subjects/patients, but has to be the same between _moving label_ and _fixed label_ from the same subject/patient, i.e. corresponding landmark pairs;
 * The image and each landmark (one 3D volume in the 4D label) should have the same shape, while the image and landmark do not need to have the same shape;
-* If inference or test is needed, also specify those folder names in Inference [config.py][config_file].
+* If inference or test is needed, also specify those folder names in Inference [config_demo.ini][config_file].
+
+One can customise a config file to specify other parameters mentioned in the tutorial. Use the same [config_demo.ini][config_file] file as a template. Both [training.py][training_file] and [inference.py][inference_file] can take a command line argument for the customised config file path, for example:
+
+```python
+python3 ~/git/label-reg-demo/training.py ~/myTrainingConfig.ini
+```
+
+```python
+python3 ~/git/label-reg-demo/inference.py ~/myInferenceConfig.ini
+```
+
 
 That's it. Let me know if any problem.
 
@@ -241,7 +252,7 @@ First, the weakly-supervised registration network training reflects an end of th
 
 [data]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/data.zip
 
-[config_file]: ./config.py
+[config_file]: ./config_demo.ini
 [loss_file]: ./labelreg/losses.py
 [network_file]: ./labelreg/networks.py
 [helper_file]: ./labelreg/helpers.py

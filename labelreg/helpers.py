@@ -140,8 +140,10 @@ class ConfigParser:
             if section_key in self.config_file:
                 for key, value in self.config[section_key].items():
                     if key in self.config_file[section_key] and self.config_file[section_key][key]:
-                        value_file = self.config_file[section_key][key]
-                        self.config[section_key][key] = value_file if type(value) == str else eval(value_file)
+                        if type(value) == str:
+                            self.config[section_key][key] = os.path.expanduser(self.config_file[section_key][key])
+                        else:
+                            self.config[section_key][key] = eval(self.config_file[section_key][key])
                     # else:
                         # print('Default set in [''%s'']: %s = %s' % (section_key, key, value))
             # else:
