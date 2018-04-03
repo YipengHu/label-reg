@@ -25,7 +25,7 @@ In these procedures, the urologists would like to know where the suspicious regi
 
 MR imaging, on the other hand, provides a better tissue contrast to localise these interesting structures. Here are some example slices from a 3D MR volume:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_mr.jpg "MR Image Volume")
-The catch is that the MR imaging is difficult and expensive to use _during_ those procedures. For examples, they are susceptible to metal instruments and require longer imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is), so they are usually only available _before_ the procedure. If the MR image could be spatially aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, becoming useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal article][Hu2018b] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy to implement.
+The catch is that the MR imaging is difficult and expensive to use _during_ those procedures. For examples, they are susceptible to metal instruments and require longer imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is), so they are usually only available _before_ the procedure. If the MR image could be spatially aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, becoming useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal article][Hu2018a] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy to implement.
 
 Using the code from this tutorial, one should be able to re-produce the entire method from training to inference and, possibly (with a bit linking-up with a GUI of choice), to deploy the learned model for some real-time surgical guidance! 
 
@@ -53,30 +53,30 @@ As a result, labels are not required in the subsequent inference, i.e. the regis
 
 
 ### <a name="section2-1"></a>Label Similarity Measures
-If we had landmarks as small as image voxels distributed across the image domain, the learning of dense correspondence (also represented as DDF) becomes a supervised learning problem. The main problems with anatomical-label-driven registration methods are that anatomical labels representing corresponding structures are inherently sparse. Among training cases, the same anatomical structures are not always present on a moving image and on a fixed image; when available, they neither cover the entire image domain nor detailed voxel correspondence. The following two examples show that, for these two cases, prostate glands in blue (possibly the most consistent landmarks that are only ones always available across all cases) may be found on both images for both cases, while _patient-specific_ cysts (orange in the left case) or calcifications (yellow in the right case) can only be identified on a case-by-case basis:
+If we had landmarks as small as image voxels sensly populated across the image domain, learning dense correspondence (also represented as DDF) becomes a supervised learning problem. The main problem with anatomical-label-driven registration methods is that anatomical labels representing corresponding structures are inherently sparse. Among training cases, the same anatomical structures are not always present on a moving image and on a fixed image; when available, they neither cover the entire image domain nor detailed voxel correspondence. The following two examples show that, for these two cases, prostate glands in blue (possibly the most consistent landmarks that are only ones always available across all cases) may be found on both images for both cases, while _patient-specific_ cysts (orange in the left case) or calcifications (yellow in the right case) can only be identified on a case-by-case basis:
 
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_2cases.jpg "Example Landmarks")
 
-An efficient implementation of the differentiable Dice with spatial smoothing on labels is introduced here to deal with the sparsity of the labels. The entrance function for the implemented multi-scale Dice is *multi_scale_loss* in [losses.py][loss_file].
+An efficient implementation of the differentiable Dice with spatial smoothing on labels is used here to deal with the sparsity of the labels. The entrance function for the implemented multi-scale Dice is *multi_scale_loss* in [losses.py][loss_file].
 
-Although the use of the Dice lost the intuitive interpretation of the statistical distribution assumed on the _weak labels of correspondence_, multi-scale Dice works well in practice as a generic loss function. Further discussion is in [Section 4 Weakly-Supervised Registration Revisited](#section4). However, 
+Although the use of the Dice lost the intuitive interpretation of the statistical distribution assumed on the _weak labels of correspondence_, multi-scale Dice works well in practice as a generic loss function. Further discussion is in [Section 4 Weakly-Supervised Registration Revisited](#section4).
 
 
 ### <a name="section2-2"></a>Convolutional Neural Networks for Predicting Displacements
 The module [networks.py][network_file] implements the networks and some variants in the papers. The network architecture is a modified encoder-decoder convolutional neural network with two features:
-* several types of shortcut layers, resnet, summation skip layers, additive trilinear upsampling;
-* additive output layers to output a single DDF with shortcuts directly to each resolution level of the entire network.
+* Several types of shortcut layers, resnet, summation skip layers, additive trilinear upsampling;
+* Additive output layers to output a single DDF with shortcuts directly to each resolution level of the entire network.
 The additive output layers can be configured by overwritting the default argument _ddf_levels_ of _LacalNet_ class in [networks.py][network_file].
 
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/network_architecture.tif "Network Architecture")
 
 
 ### <a name="section2-3"></a>Deformation Regularisation
-The main function implementing bending energy is *compute_bending_energy* in [losses.py][loss_file].
+Partly due to the sparsity of the training labels, regularisation of the predicted defromation fiels is essential. Borrowing the regularisation strategy used in traditional image registration alsorithms as well as those from classical mechanics, some form of smoothness of the entire displacemnt field is penalised in addition to the [label similarity meaures](#section2-1). The main function implementing bending energy is *compute_bending_energy* in [losses.py][loss_file], among other choices.
 
 
 ### <a name="section2-4"></a>Training
-* Training-Step-1 (data):
+* **Training-Step-1 (data)**:
 Get the data reader objects and some of useful information with in the readers:
 
 ```python
@@ -87,7 +87,7 @@ reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label
     '~/git/label-reg-demo/data/train/us_labels')
 ```
 
-* Training-Step-2 (graph):
+* **Training-Step-2 (graph)**:
 Placeholders for **4** pairs of moving and fixed images and affine transformation parameters with size of **[1, 12]** for data augmentation:
 
 ```python
@@ -137,7 +137,7 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type='dice',
                                                     ddf=reg_net.ddf)
 ```
 
-* Training-Step-3 (Optimisation):
+* **Training-Step-3** (Optimisation):
 Adam is the favourate optimiser here with default settings with an initial learning rate around 1e-5:
 
 ```python
@@ -176,7 +176,7 @@ ph_moving_image = tf.placeholder(tf.float32, [reader_moving_image.num_data]+read
 ph_fixed_image = tf.placeholder(tf.float32, [reader_fixed_image.num_data]+reader_fixed_image.data_shape+[1])
 ```
 
-First, restore the trained network (only the part of the _reg_net_ for predicting the DDF and weights):
+First, restore the trained network (only the _reg_net_ for predicting DDF and trained weights):
 
 ```python
 reg_net = network.build_network(network_type='local',
@@ -189,7 +189,7 @@ sess = tf.Session()
 saver.restore(sess, '~/git/label-reg-demo/data/model.ckpt')
 ```
 
-Then, the DDF can be computed using one-pass evaluation:
+Then, the DDF can be computed using one-pass evaluation on the pairs of images to register:
 
 ```python
 testFeed = {ph_moving_image: reader_moving_image.get_data(),
@@ -198,7 +198,7 @@ ddf = sess.run(reg_net.ddf, feed_dict=testFeed)
 ```
 And, that's it for inference.
 
-Depending on the application, the predicted DDF can be used in many ways, warping the moving MR images given a real-time ultrasound image, warping a bimary image representing some segmentation on the moving MR image (such as a tumour), transforming the real-time information (such as surgical instrument position) back to the MR image space or transforming some MR-defined point cloud to ultrasound imaging coordinates (note in this case a inverting of the non-linear transformation may be required), to name a few. This tutorial uses a demo function using TensorFlow ([apps.py][app_file]) to warp MR-defined images and labels in batches on GPU:
+Depending on the application, the predicted DDF can be used in many ways, warping the moving MR images given a real-time ultrasound image, warping a bimary image representing segmentation(s) on the moving MR image (such as a tumour), transforming the real-time information (such as surgical instrument position) back to the MR image space or transforming some MR-defined point cloud to ultrasound imaging coordinates (N.B. in this case an inverting of the predicted transformation may be required), to name a few. This tutorial demonstrates a function using TensorFlow ([apps.py][app_file]) to warp MR images or MR-defined labels in batches on GPU:
 
 ```python
 warped_images = app.warp_volumes_by_ddf(reader_moving_image.get_data(), ddf)
@@ -211,9 +211,9 @@ Example code is in the top-level [inference.py][inference_file], which can also 
 
 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
-[TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, time and nibabel (for file IO only). All are easily available if not already instaled. 
+[TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, sys, time and nibabel (for file IO only). All are easily available if not already instaled. 
 
-Files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quartets of moving-fixed image and label data should be organised as follows in order to run the code without modification:
+Files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quartets of moving-and-fixed image-and-label data should be organised as follows in order to run the code without modification:
 
 * The training data should be in separate folders and the folder names are specified under the [Data] section in the [config_demo.ini][config_file], for example:
 
@@ -225,11 +225,11 @@ dir_moving_label = ~/git/label-reg-demo/data/train/mr_labels
 dir_fixed_label = ~/git/label-reg-demo/data/train/us_labels
 ```
 
-* They should have the same number of subjects, number of image volume files. The code currently assigns corresponding subjects by re-ordered file names. So it is easier to just rename them so that four files from the same patient/subject have the same file name;
+* They should have the same number of image volume files (patients/subjects). The code currently assigns corresponding subjects by re-ordered file names. So it is easier to just rename them so that four files from the same patient/subject have the same file name;
 * Each image file contains a 3D image of the same shape;
 * Each label file contains a 4D volume with 4th dimension contains different landmarks delineated from the associated image volume. The segmented-foreground and background are represented by 0s and 1s, respectively;
-* The number of landmarks can be variable (and large) across subjects/patients, but has to be the same between _moving label_ and _fixed label_ from the same subject/patient, i.e. corresponding landmark pairs;
-* The image and each landmark (one 3D volume in the 4D label) should have the same shape, while the image and landmark do not need to have the same shape;
+* The number of landmarks can be variable (and large) across patients/subjects, but has to be the same between _moving label_ and _fixed label_ from the same patient/subject, i.e. corresponding landmark pairs;
+* The image and each of its landmark (one 3D volume in the 4D label) should have the same shape, while the moving and fixed data do not need to have the same shape;
 * If inference or test is needed, also specify those folder names in Inference [config_demo.ini][config_file].
 
 One can customise a config file to specify other parameters mentioned in the tutorial. Use the same [config_demo.ini][config_file] file as a template. Both [training.py][training_file] and [inference.py][inference_file] can take a command line argument for the customised config file path, for example:
@@ -238,16 +238,26 @@ One can customise a config file to specify other parameters mentioned in the tut
 python3 ~/git/label-reg-demo/training.py ~/myTrainingConfig.ini
 ```
 
+The trained model will be saved in file_model_save under [Train] section specified in [config_demo.ini][config_file].
+
 ```python
 python3 ~/git/label-reg-demo/inference.py ~/myInferenceConfig.ini
 ```
+
+By default, three files, the ddf, warped_image, warped_label will be saved in dir_save under [Inference] section specified in [config_demo.ini][config_file].
 
 
 That's it. Let me know if any problem.
 
 
 ## <a name="section4"></a>4 Weakly-Supervised Registration Revisited
-First, the weakly-supervised registration network training reflects an end of the human-label-driven vs unsupervised-pattern-recognition spectrum. The prostate imaging application here is a typical example that classical intensity-based similarity measures such as mutual information are simply do not work.
+First, **weakly-supervised learning** is not a rigrously defiend term. It was not mentioend at all in [Ian Goodfellow's Deep Learning book]. Strictly speaking, the registration method used here is also an unsupervised learning without labels. The target labels of registration should be ground-truth displacement fields which are not easily available. An alternative form of the displacement field is a "correspondence table" indicating every voxel in moving iamge coordinates should move to which pixel in the fixed image coorindtaes. One way to go about the weak labels is to consider the anatomical labels as such a table, but currupted with non-i.i.d. noise. All the voxels in an anatomical region (defined by the segmentation labels) on one image, should be more likely to be in the same region on another image. With added nuisance of inconsistenly available types of anatomical landmarks, a naive multi-class implementation of such a correspondence table would be very sparse. The initial work [Hu et al ISBI2018][Hu2018b] explored the idea to consider, instead, a two-class classification problem, where the abstract concept of correspondence is classfied, two voxels (after warping) being correspodent or not correspondent. So the segmentations of different types of anatomical regions become noise-corrupted **data** of these correspondence, that is, being correspondent if both are foreground 1s, not correspondent otherwise. A well-defined cross-entropy was used to measure the overall classification loss. 
+
+The main problem with the two-class formulation is about weighting. The cross-entropy assumes no difference between voxel locations are nearer to boudaries and those are not. It does not distuniguish difference between forground and background, which can be substantially altered by imaging parameters (such as acquired fields of view), or which type of anatomical regions the (non)correspondence voxels come from. For example, a voxel in the foreground segmentation of the gland should, without any other informarion, be a _weaker_ label than that from a foreground voxel from very small landmark, as the latter is a very _strong_ predictor where this voxel should move to, although it helps very little to indicate the displacemnt field everywhere else.
+
+Overlap measures, such as Dice, have an interesting quality to "dynamically" re-weight between these classes and, therefore, have been adoptted in medical image segmentation tasks with consistetly superior performace (afterall, it is the measure for segmentation). The multi-scale strategy is to mitigate the practical issues on the landmarks with smaller volumes, so they will still produce non-zero gradients even without overlap during training. The downside of the Dice is it lacks a clear interpretation of the weakly-supervision, leaning towards a general unsupervised learning where any loss function is sensible if it drives the image alignment. The practical difference worth a name of "weak supervision" is that the loss function is not dependent on the image modality, but applied on segmentation labels which, to certain degree, is closer to tranditional feature-based registration method. The neural network is a better way to learn the feature representation. It also reflects the fact that this method, compared with other unsupervised learning, relies on anatomical knowledge in human labeling instead of statistical properties summarised otherwise (e.g. through image-based similarity measures).
+
+It may be the case that, due to the nature of weakly-supervised learning, different formualtions of the loss function, or the combination of the loss and the regularisation, is only a different weighting strategy to "guess" the dense correspondence. Without ground-truth (for traing and validation), this will inherently be dependent on image modalities and applications. Therefore, it may be better to investigate application-specific loss function (such as better surrogates of the true TREs on regions of interest).
 
 
 [data]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/data.zip
@@ -263,6 +273,7 @@ First, the weakly-supervised registration network training reflects an end of th
 
 [Hu2018a]: https://arxiv.org/abs/1711.01666
 [Hu2018b]: https://arxiv.org/abs/1711.01666
+[TheDeepLearningBook]: http://www.deeplearningbook.org/
 
 [niftynet]: http://niftynet.io/
 [nibabel]: http://nipy.org/nibabel/
