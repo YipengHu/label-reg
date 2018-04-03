@@ -113,74 +113,84 @@ def write_images(input_, file_path=None, file_prefix=''):
          for idx in range(batch_size)]
 
 
-def parse_config_file(argv):
+class ConfigParser:
+    def __init__(self, argv='', config_type='all'):
 
-    nargs = len(argv)
-    if nargs == 2:
-        filename = argv[1]
-    else:
-        filename = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                "../config_demo.ini"))
-        if os.path.isfile(filename):
-            print('Use config file in default path: %s.' % filename)
+        nargs_ = len(argv)
+        if nargs_ == 2:
+            filename_ = argv[1]
         else:
-            raise Exception('Missing config file!')
+            filename_ = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../config_demo.ini"))
+            print('Reading default config file in: %s.' % filename_)
 
-    config_file = configparser.ConfigParser()
-    config_file.read(filename)
+        self.config_file = configparser.ConfigParser()
+        if os.path.isfile(filename_):
+            self.config_file.read(filename_)
+        else:
+            print('Using defaults due to missing config file.')
 
-    if 'Data' in config_file:
-        if 'dir_moving_image' in config_file['Data']:
-            config.Data.dir_moving_image = config_file['Data']['dir_moving_image']
-        if 'dir_fixed_image' in config_file['Data']:
-            config.Data.dir_fixed_image = config_file['Data']['dir_fixed_image']
-        if 'dir_moving_label' in config_file['Data']:
-            config.Data.dir_moving_label = config_file['Data']['dir_moving_label']
-        if 'dir_fixed_label' in config_file['Data']:
-            config.Data.dir_fixed_label = config_file['Data']['dir_fixed_label']
+        self.config_type = config_type.lower()
+        self.config = self.get_defaults()
+        self.check_defaults()
+        self.print()
 
-    if 'Network' in config_file:
-        if 'network_type' in config_file['Network']:
-            config.Network.network_type = config_file['Network']['network_type']
+    def check_defaults(self):
 
-    if 'Loss' in config_file:
-        if 'similarity_type' in config_file['Loss']:
-            config.Loss.similarity_type = config_file['Loss']['similarity_type']
-        if 'similarity_scales' in config_file['Loss']:
-            config_file['Loss']['similarity_scales'] = eval(config_file['Loss']['similarity_scales'])
-        if 'regulariser_type' in config_file['Loss']:
-            config.Loss.regulariser_type = config_file['Loss']['regulariser_type']
-        if 'regulariser_weight' in config_file['Loss']:
-            config.Loss.regulariser_weight = eval(config_file['Loss']['regulariser_weight'])
+        for section_key in self.config.keys():
+            if section_key in self.config_file:
+                for key, value in self.config[section_key].items():
+                    if key in self.config_file[section_key] and self.config_file[section_key][key]:
+                        value_file = self.config_file[section_key][key]
+                        self.config[section_key][key] = value_file if type(value) == str else eval(value_file)
+                    # else:
+                        # print('Default set in [''%s'']: %s = %s' % (section_key, key, value))
+            # else:
+                # print('Default section set: [''%s'']' % section_key)
 
-    if 'Train' in config_file:
-        if 'total_iterations' in config_file['Train']:
-            config.Train.total_iterations = int(eval(config_file['Train']['total_iterations']))
-        if 'minibatch_size' in config_file['Train']:
-            config.Train.minibatch_size = int(eval(config_file['Train']['minibatch_size']))
-        if 'learning_rate' in config_file['Train']:
-            config.Train.learning_rate = eval(config_file['Train']['learning_rate'])
-        if 'freq_info_print' in config_file['Train']:
-            config.Train.freq_info_print = int(eval(config_file['Train']['freq_info_print']))
-        if 'freq_model_save' in config_file['Train']:
-            config.Train.freq_model_save = int(eval(config_file['Train']['freq_model_save']))
-        if 'file_model_save' in config_file['Train']:
-            config.Train.file_model_save = config_file['Train']['file_model_save']
+    def __getitem__(self, key):
+        return self.config[key]
 
-    if 'Inference' in config_file:
-        if 'file_model_saved' in config_file['Inference']:
-            config.Inference.file_model_saved = config_file['Inference']['file_model_saved']
-        if 'dir_moving_image' in config_file['Inference']:
-            config.Inference.dir_moving_image = config_file['Inference']['dir_moving_image']
-        if 'dir_fixed_image' in config_file['Inference']:
-            config.Inference.dir_fixed_image = config_file['Inference']['dir_fixed_image']
-        if 'dir_save' in config_file['Inference']:
-            config.Inference.dir_save = config_file['Inference']['dir_save']
+    def print(self):
+        for section_key, section_value in self.config.items():
+                for key, value in section_value.items():
+                    print('[''%s'']: %s = %s' % (section_key, key, value))
 
-    if 'Test' in config_file:
-        if 'dir_moving_label' in config_file['Test']:
-            config.Test.dir_moving_label = config_file['Test']['dir_moving_label']
-        if 'dir_fixed_label' in config_file['Test']:
-            config.Test.dir_fixed_label = config_file['Test']['dir_fixed_label']
+    def get_defaults(self):
 
-    return config
+        home_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
+
+        network = {'network_type': 'local'}
+
+        data = {'dir_moving_image': os.path.join(home_dir, 'data/train/mr_images'),
+                'dir_fixed_image': os.path.join(home_dir, 'data/train/us_images'),
+                'dir_moving_label': os.path.join(home_dir, 'data/train/mr_labels'),
+                'dir_fixed_label': os.path.join(home_dir, 'data/train/us_labels')}
+
+        loss = {'similarity_type': 'dice',
+                'similarity_scales': [0, 1, 2, 4, 8, 16],
+                'regulariser_type': 'bending',
+                'regulariser_weight': 0.5}
+
+        train = {'total_iterations': int(1e5),
+                 'learning_rate': 1e-5,
+                 'minibatch_size': 2,
+                 'freq_info_print': 100,
+                 'freq_model_save': 500,
+                 'file_model_save': os.path.join(home_dir, 'data/model.ckpt')}
+
+        inference = {'file_model_saved': train['file_model_save'],
+                     'dir_moving_image': os.path.join(home_dir, 'data/test/mr_images'),
+                     'dir_fixed_image': os.path.join(home_dir, 'data/test/us_images'),
+                     'dir_save': os.path.join(home_dir, 'data/'),
+                     'dir_moving_label': os.path.join(home_dir, 'data/test/mr_labels'),
+                     'dir_fixed_label': os.path.join(home_dir, 'data/test/us_labels')}
+
+        if self.config_type == 'training':
+            config = {'Data': data, 'Network': network, 'Loss': loss, 'Train': train}
+        elif self.config_type == 'inference':
+            config = {'Network': network, 'Inference': inference}
+        else:
+            config = {'Data': data, 'Network': network, 'Loss': loss, 'Train': train, 'Inference': inference}
+
+        return config
+

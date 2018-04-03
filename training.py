@@ -8,8 +8,9 @@ import labelreg.networks as network
 import labelreg.utils as util
 import labelreg.losses as loss
 
-# to get cus
-config = helper.parse_config_file(sys.argv)
+
+# 0 - get configs
+config = helper.ConfigParser(sys.argv, 'training')
 
 # 1 - data
 reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label = helper.get_data_readers(
@@ -41,10 +42,10 @@ input_fixed_label = util.warp_image_affine(ph_fixed_label, ph_fixed_affine)  # d
 
 warped_moving_label = reg_net.warp_image(input_moving_label)  # warp the moving label with the predicted ddf
 
-loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config.Loss.similarity_type,
-                                                    similarity_scales=config.Loss.similarity_scales,
-                                                    regulariser_type=config.Loss.regulariser_type,
-                                                    regulariser_weight=config.Loss.regulariser_weight,
+loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config['Loss']['similarity_type'],
+                                                    similarity_scales=config['Loss']['similarity_scales'],
+                                                    regulariser_type=config['Loss']['regulariser_type'],
+                                                    regulariser_weight=config['Loss']['regulariser_weight'],
                                                     label_moving=warped_moving_label,
                                                     label_fixed=input_fixed_label,
                                                     network_type=config['Network']['network_type'],
@@ -70,7 +71,7 @@ for step in range(config['Train']['total_iterations']):
 
     minibatch_idx = step % num_minibatch
     case_indices = train_indices[
-                    minibatch_idx * config['Train']['minibatch_size']:(minibatch_idx + 1) * config['Train']['minibatch_size']]
+                    minibatch_idx*config['Train']['minibatch_size']:(minibatch_idx+1)*config['Train']['minibatch_size']]
     label_indices = [random.randrange(reader_moving_label.num_labels[i]) for i in case_indices]
 
     trainFeed = {ph_moving_image: reader_moving_image.get_data(case_indices),
