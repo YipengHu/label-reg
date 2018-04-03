@@ -2,7 +2,7 @@
 
 
 ## Introduction
-This tutorial aims to use minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was in [Hu et al ISBI2018][Hu2018b]). An efficient re-implementation with other utilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
+This tutorial aims to provide minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work in [Hu et al ISBI2018][Hu2018b]). An efficient re-implementation with other utilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
 
 * [**1. Multimodal Image Registration**](#section1)
 * [     - Example Data](#section1-1)
@@ -15,9 +15,11 @@ This tutorial aims to use minimum and self-explanatory scripts to re-work the im
 * [**3. Try with Your Own Image-Label Data**](#section3)
 * [**4. Weakly-Supervised Registration Revisited**](#section4)
 
+Using the code from this tutorial, one should be able to re-produce the entire method from training to inference and, possibly (with a bit linking-up with a GUI of choice), to deploy the learned model for some real-time surgical guidance! 
+
 
 ## <a name="section1"></a>1 Multimodal Image Registration
-Medical image registration aims to find a dense displacement field (DDF), such that a given "moving image" can be warped (transformed using the predicted DDF) to match a second "fixed image", that is, the corresponding anatomical structures are in the same spatial location. 
+Medical image registration aims to find a dense displacement field (DDF), such that a given "moving image" can be warped (transformed using the predicted DDF) to match a second "fixed image", that is, the corresponding anatomical structures are aligned in the same spatial locations. A DDF is typically a set of displacements (in x-, y- and z components) defined at every voxel in the fixed image coordinates, so each set is about three times of the size of the fixed image. They usually are inverted displacemnts (i.e. from fixed to moving) to resample intensities from fixed image (which is the one being _warped_ to moving image coordinates). 
 
 The definition of "multimodal" varies from changing of imaging parameters (such as MR sequencing or contrast agents) to images from different scanners. An example application is to support 3D-ultrasound-guided intervention for prostate cancer patients. The 3D ultrasound image looks like this:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_us.jpg "Ultrasound Image Volume")
@@ -25,17 +27,15 @@ In these procedures, the urologists would like to know where the suspicious regi
 
 MR imaging, on the other hand, provides a better tissue contrast to localise these interesting structures. Here are some example slices from a 3D MR volume:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_mr.jpg "MR Image Volume")
-The catch is that the MR imaging is difficult and expensive to use _during_ those procedures. For examples, they are susceptible to metal instruments and require longer imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is), so they are usually only available _before_ the procedure. If the MR image could be spatially aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, becoming useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal article][Hu2018a] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy to implement.
-
-Using the code from this tutorial, one should be able to re-produce the entire method from training to inference and, possibly (with a bit linking-up with a GUI of choice), to deploy the learned model for some real-time surgical guidance! 
+The catch is that the MR imaging is difficult and expensive to use _during_ those procedures. For examples, they are susceptible to metal instruments and require longer imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is), so they are usually only available _before_ the procedure. If the MR image can be spatially aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, very useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal article][Hu2018a] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy-to-implement.
 
 
 ### <a name="section1-1"></a>Example Data
 Due to medical data restrictions, this tutorial uses some fake (fewer and smaller) data to mimic those from the prostate imaging application. You can download these by clicking the following link:
 
-[**Download example data**][data]
+[**Download Example Data**][data]
 
-First unzip the downloaded data to folders, which you need to specify in [config_demo.ini][config_file] in order to run the code.
+First unzip the downloaded data to folders, which you need to specify in [config_demo.ini][config_file] in order to run the application.
 
 In summary, for each numbered patient, there is a quartet of data, a 3D MR volume, a 3D ultrasound volume, several landmarks delineated from MR and ultrasound volumes. The landmark volumes are in 4D with the fourth dimension indicates different types of landmarks, such as the prostate gland and the apex/base points (where urethra enters and exists prostate gland).
 
@@ -77,7 +77,7 @@ Partly due to the sparsity of the training labels, regularisation of the predict
 
 ### <a name="section2-4"></a>Training
 * **Training-Step-1 (data)**:
-Get the data reader objects and some of useful information with in the readers:
+Get the data reader objects and some of useful information with the readers:
 
 ```python
 reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label = helper.get_data_readers(
@@ -99,7 +99,7 @@ input_moving_image = util.warp_image_affine(ph_moving_image, ph_moving_affine)  
 input_fixed_image = util.warp_image_affine(ph_fixed_image, ph_fixed_affine)  # data augmentation
 ```
 
-The **local** registration network is the default architecture:
+The **local** registration network described in [Convolutional Neural Networks for Predicting Displacements](#section2-2) is the default architecture:
 
 ```python
 reg_net = network.build_network('local',
@@ -124,7 +124,7 @@ Warp the moving labels using the predicted DDFs:
 warped_moving_label = reg_net.warp_image(input_moving_label)
 ```
 
-The label similarity measure and the weighted deformation regularisation can then be constructed between the warped moving labels and the fixed labels:
+The [label similarity measure](#section2-1) and the weighted [deformation regularisation](#section2-3) can then be constructed between the warped moving labels and the fixed labels:
 
 ```python
 loss_similarity, loss_regulariser = loss.build_loss(similarity_type='dice',
@@ -138,15 +138,15 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type='dice',
 ```
 
 * **Training-Step-3** (Optimisation):
-Adam is the favourite optimiser here with default settings with an initial learning rate around 1e-5:
+Adam is the favourite optimiser here with default settings with an initial learning rate around 1e-5 (it may need to be tuned down if the network_type is set to 'global' or 'composite'):
 
 ```python
 train_op = tf.train.AdamOptimizer(1e-5).minimize(loss_similarity+loss_regulariser)
 ```
 
-The main iterative minibatch gradient descent is fairly standard, except for the two-stage clustering sampling when sampling the label data, after the image pairs being sampled. This is useful because different image pairs have different numbers of labels, a consequence for exploiting _ad hoc_ anatomical labels, which was further discussed in the papers. Basically, this can form a compact training minibatch of image-label quartets with fixed size, enabling efficient use of the parallel computing resource, as in the placehoders in the previous steps. 
+The main iterative minibatch gradient descent is fairly standard, except for the two-stage clustering sampling when sampling the label data, after the image pairs being sampled. This is useful because different image pairs have different numbers of labels, a consequence for exploiting _ad hoc_ anatomical labels, which was further discussed in the papers. Importantly, this can form a compact training minibatch of image-label quartets with a fixed size, as defined in the placehoders in the previous steps, enabling efficient use of the parallel computing resource. 
 
-A standard minibatch optimisation can be trivially modified to uniformly sample a label pair (moving and fixed) from those available label pairs delineated on each (first-stage) sampled image pair (i.e. a subject/patient). Again, assuming a minibatch size of 4 and _num_labels[i]_ is the number of available labels for ith image pair:
+A standard minibatch optimisation can be trivially modified to uniformly sample a label pair (moving and fixed) from those available label pairs delineated on each (first-stage) sampled image pair (i.e. moving and fixed images from one patient/subject). Assuming a minibatch size of 4 again, _num_labels[i]_ is the number of available labels for ith image pair:
 
 ```python
     # in each iteration step
@@ -155,19 +155,20 @@ A standard minibatch optimisation can be trivially modified to uniformly sample 
     label_indices = [random.randrange(reader_moving_label.num_labels[i]) for i in case_indices]
 ```
 
+where:
 ```python
 num_minibatch = int(reader_moving_label.num_data/4)
 train_indices = [i for i in range(reader_moving_label.num_data)]
 ```
 
 
-Two utility computing nodes are also included for monitoring the training process. Here the binary Dice, _dice_, and distance between centroids, _dist_, implemented in [utils.py][util_file]. 
+Two utility computing nodes are also included for monitoring the training process. Here, the binary Dice, _dice_, and distance between centroids, _dist_, are implemented in [utils.py][util_file]. 
 
-The Dice scores should be consistently above 0.9 after a few thousand iterations on the gland segmentation labels (for convenience, they are always the first landmark, i.e. label_index=0, in the example data. But this is not a requirement in the random stage sampling.) The top-level file, [training.py][training_file] contains all the necessary code to perform the training described above with simple but sufficient file IO support. Read the [Section 3](#section3) for more information on how to run the code with real imaging data.
+The Dice scores should be consistently above 0.90 after a few thousand iterations on the gland segmentation labels (for convenience, gland segmentations are always the first landmark, i.e. label_index=0, in the example data. But this is not a requirement.) The top-level file, [training.py][training_file] contains all the necessary code to perform the training described above with simple file IO support. Read the [Section 3](#section3) for more information on how to run the code with real imaging data.
 
 
 ### <a name="section2-5"></a>Inference
-Considering the difference between the inference and the training is a particularly effective way to obtain insight of the registration method. The first difference is on the data. While the training requires moving-fixed-image-label quartets, inference only needs a pair of moving and fixed images:
+Considering the difference between the inference and the training is an effective way to obtain insight of the registration method. The first difference is on the data. While the training requires moving-fixed-image-label quartets, inference only needs a pair of moving and fixed images:
 
 ```python
 reader_moving_image, reader_fixed_image, _, _ = helper.get_data_readers('~/git/label-reg-demo/data/test/mr_images',
@@ -198,7 +199,8 @@ ddf = sess.run(reg_net.ddf, feed_dict=testFeed)
 ```
 And, that's it for inference.
 
-Depending on the application, the predicted DDF can be used in many ways, warping the moving MR images given a real-time ultrasound image, warping a binary image representing segmentation(s) on the moving MR image (such as a tumour), transforming the real-time information (such as surgical instrument position) back to the MR image space or transforming some MR-defined point cloud to ultrasound imaging coordinates (N.B. in this case an inverting of the predicted transformation may be required), to name a few. This tutorial demonstrates a function using TensorFlow ([apps.py][app_file]) to warp MR images or MR-defined labels in batches on GPU:
+
+Depending on the application, the predicted DDF can be used in many ways, such as a) warping the moving MR images given a real-time ultrasound image, 2) warping a binary image representing segmentation(s) on the moving MR image (such as a tumour), 3) transforming the real-time information (such as surgical instrument position) back to the MR image space or 4) transforming a MR-defined point cloud to ultrasound imaging coordinates (N.B. in this case an inverting of the predicted transformation may be required). This tutorial demonstrates a function using TensorFlow ([apps.py][app_file]) to warp MR images or MR-defined labels in batches on GPU:
 
 ```python
 warped_images = app.warp_volumes_by_ddf(reader_moving_image.get_data(), ddf)
@@ -207,7 +209,7 @@ data_moving_label = helper.DataReader('~/git/label-reg-demo/data/test/mr_labels'
 warped_labels = app.warp_volumes_by_ddf(data_moving_label, ddf)
 ```
 
-Example code is in the top-level [inference.py][inference_file], which can also be used as an application for [Your Own Image-Label Data](#section3).
+Example code is in the top-level [inference.py][inference_file], which can also be used as an application for [your own image-label data](#section3).
 
 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
@@ -226,9 +228,9 @@ dir_fixed_label = ~/git/label-reg-demo/data/train/us_labels
 ```
 
 * They should have the same number of image volume files (patients/subjects). The code currently assigns corresponding subjects by re-ordered file names. So it is easier to just rename them so that four files from the same patient/subject have the same file name;
-* Each image file contains a 3D image of the same shape;
-* Each label file contains a 4D volume with 4th dimension contains different landmarks delineated from the associated image volume. The segmented-foreground and background are represented by 0s and 1s, respectively;
-* The number of landmarks can be variable (and large) across patients/subjects, but has to be the same between _moving label_ and _fixed label_ from the same patient/subject, i.e. corresponding landmark pairs;
+* Each image file contains a 3D image of the same shape, with a data type convertable to float32;
+* Each label file contains a 4D volume with 4th dimension contains different landmarks delineated from the associated image volume. The segmented-foreground and background are represented by or convertable to float32 0s and 1s, respectively;
+* The number of landmarks can be variable (and large) across patients/subjects, but has to be the same within each pair from the same patient/subject, between _moving label_ and _fixed label_ (i.e. representing corresponding landmark pairs);
 * The image and each of its landmark (one 3D volume in the 4D label) should have the same shape, while the moving and fixed data do not need to have the same shape;
 * If inference or test is needed, also specify those folder names in Inference [config_demo.ini][config_file].
 
@@ -251,13 +253,17 @@ That's it. Let me know if any problem.
 
 
 ## <a name="section4"></a>4 Weakly-Supervised Registration Revisited
-First, **weakly-supervised learning** is not a rigorously defined term. It was not mentioned at all in [Ian Goodfellow's Deep Learning book][TheDeepLearningBook]. Strictly speaking, the registration method used here is still an unsupervised learning without the labels for things (i.e. the displacements) need to be predicted. The target labels of registration should be ground-truth displacement fields which are not easily available (a motivation for this type of method). An alternative form of the displacement field is a "correspondence table" indicating where in the fixed image coordinates every voxel in moving image coordinates should move to. One way to go about the weak labels is to consider the anatomical labels as such a table, but corrupted with non-i.i.d. noise. All the voxels in an anatomical region (defined by the segmentation labels) on one image, should be more likely to be in the same region on another image. With added nuisance of inconsistently available types of anatomical landmarks, a naive multi-class implementation of such a correspondence table would be very sparse. The initial work [Hu et al ISBI2018][Hu2018b] explored the idea to consider, instead, a two-class classification problem, where the abstract concept of correspondence is classified, two voxels (after warping) being correspondent or not correspondent. In this case, the segmentations of different types of anatomical regions become noise-corrupted _data_ of these correspondence, that is, being correspondent if both are foreground 1s or both are background 0s, not correspondent otherwise. A well-defined cross-entropy was used to measure the overall classification loss. 
+First, **weakly-supervised learning** is not a rigorously defined term. It was not mentioned at all in [Ian Goodfellow's Deep Learning book][TheDeepLearningBook]. Strictly speaking, the registration method used here is still an unsupervised regression without the labels for targets (i.e. the displacements) need to be predicted. The target labels of registration should be ground-truth displacement fields which are (the main point for this type of method) not easily available. An alternative form of displacement field is a "correspondence table" indicating where in the fixed image coordinates every voxel in moving image should move to. One way to go about the weak labels is to consider the anatomical labels arranged in such a table, but corrupted with non-i.i.d. noise. All the voxels in an anatomical region (defined by the segmentation labels) on one image, should be more likely to be in the same region on another image. With added nuisance of inconsistently available types of anatomical landmarks, a naive multi-class implementation of such a correspondence table would be very sparse. The initial work [Hu et al ISBI2018][Hu2018b] explored the idea to consider, instead, a two-class classification problem, where the abstract concept of correspondence is used, two voxels (after warping) are considered being correspondent or not correspondent. In this case, the segmentations of different types of anatomical regions become noise-corrupted _data_ of these correspondence, that is, being correspondent if both are foreground 1s or both are background 0s, not correspondent otherwise. A well-defined cross-entropy was used to measure the overall classification loss. 
 
-The main problem with the two-class formulation is about weighting. The cross-entropy assumes no difference between voxel locations are nearer to boundaries and those are not. It does not distinguish difference between foreground and background, which can be substantially altered by imaging parameters (such as acquired fields of view), or which type of anatomical regions the (non)correspondence voxels come from. For example, a voxel in the foreground segmentation of the gland should, without any other information, be a _weaker_ label than that from a foreground voxel from very small landmark, as the latter is a very _strong_ predictor where this voxel should move to, although it helps very little to indicate the displacement field everywhere else.
+The main problem with the two-class formulation is about weighting. The cross-entropy assumes no difference between voxel locations are nearer to boundaries and those are not. It does not distinguish difference between foreground and background, which can be substantially altered by imaging parameters (such as acquired fields of view), or which type of anatomical regions the (non)correspondence voxels come from. For example, a voxel in the foreground segmentation of the gland should, without any other information, be a _weaker_ correspondence label than that from a foreground voxel from very small landmark, as the latter is a very _strong_ predictor for where this voxel should move to, although it helps very little to indicate the displacement field everywhere else. This is why some heavy heuristic preprocessing label smoothing was used.
 
-Overlap measures, such as Dice, have an interesting quality to "dynamically" re-weight between these classes and, therefore, have been adopted in medical image segmentation tasks with consistently superior performance (after all, it is the measure for segmentation). The multi-scale strategy is to mitigate the practical issues on the landmarks with smaller volumes, so they will still produce non-zero gradients even without overlap during training. The downside of the Dice is it lacks a clear interpretation of the weakly-supervision, leaning towards a general unsupervised learning where any loss function is sensible if it drives the image alignment. The practical difference worth a name of "weak supervision" is that the loss function is not dependent on the image modality, but applied on segmentation labels which, to certain degree, is closer to traditional feature-based registration method. The neural network is a better way to learn the feature representation. It also reflects the fact that this method, compared with other unsupervised learning, relies on anatomical knowledge in human labelling instead of statistical properties summarised otherwise (e.g. through image-based similarity measures).
+Overlap measures, such as Dice, have an interesting quality to re-weight between these classes, with the changing denominator of Dice (as overlap changes) acting as a "dynamic" weighting mechanism. Therefore, it has been adopted in medical image segmentation tasks with consistently superior performance (after all, it is the measure for evaluating segmentation). A similar effect has also been observed in the label-driven registration tasks. The multi-scale strategy is to mitigate the practical issues on the landmarks with smaller volumes, so they will still produce non-zero gradients even without overlap during training. 
+
+The downside of Dice, however, is that it lacks a clear interpretation of the weakly-supervision, leaning towards a general unsupervised learning where any loss function is sensible if it drives the image alignment. The practical difference worth a name of "weak supervision" is perhaps that the loss function is not dependent on the image modality, but applied on segmentation labels which, to certain degree, is closer to traditional feature-based registration method. The neural network is a better way to learn the feature representation. It also reflects the fact that this method, compared with other unsupervised learning, relies on anatomical knowledge in human labelling instead of statistical properties summarised otherwise (e.g. through image-based similarity measures).
 
 It may be the case that, due to the nature of weakly-supervised learning, different formulations of the loss function, or the combination of the loss and the regularisation, is only a different weighting strategy to "guess" the dense correspondence. Without ground-truth (for training and validation), this will inherently be dependent on image modalities and applications. Therefore, it may be better to investigate application-specific loss function (such as better surrogates of the true TREs on regions of interest).
+
+Even with unlimited data pairs, there is a physical bounds of the label availability partly due to the underlying imaging process that simply do not produce voxel-level correspondence information and partly due to limited anatomical knowledge. In this case, prior knowlege on application-specific physical transformation (instead of bending energy for instance), other intensity-based similarity and predicting with labels might provide further assitance.
 
 
 [data]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/data.zip
