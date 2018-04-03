@@ -68,7 +68,7 @@ The module [networks.py][network_file] implements the networks and some variants
 * Additive output layers to output a single DDF with shortcuts directly to each resolution level of the entire network.
 The additive output layers can be configured by overwriting the default argument _ddf_levels_ of _LacalNet_ class in [networks.py][network_file].
 
-![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/network_architecture.tif "Network Architecture")
+![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/network_architecture.jpg "Network Architecture")
 
 
 ### <a name="section2-3"></a>Deformation Regularisation
@@ -257,7 +257,9 @@ First, **weakly-supervised learning** is not a rigorously defined term. It was n
 
 The main problem with the two-class formulation is about weighting. The cross-entropy assumes no difference between voxel locations are nearer to boundaries and those are not. It does not distinguish difference between foreground and background, which can be substantially altered by imaging parameters (such as acquired fields of view), or which type of anatomical regions the (non)correspondence voxels come from. For example, a voxel in the foreground segmentation of the gland should, without any other information, be a _weaker_ correspondence label than that from a foreground voxel from very small landmark, as the latter is a very _strong_ predictor for where this voxel should move to, although it helps very little to indicate the displacement field everywhere else. This is why some heavy heuristic preprocessing label smoothing was used.
 
-Overlap measures, such as Dice, have an interesting quality to re-weight between these classes, with the changing denominator of Dice (as overlap changes) acting as a "dynamic" weighting mechanism. Therefore, it has been adopted in medical image segmentation tasks with consistently superior performance (after all, it is the measure for evaluating segmentation). A similar effect has also been observed in the label-driven registration tasks. The multi-scale strategy is to mitigate the practical issues on the landmarks with smaller volumes, so they will still produce non-zero gradients even without overlap during training. 
+Overlap measures, such as Dice, have an interesting quality to re-weight between these classes, with the changing denominator of Dice (as overlap changes) acting as a "dynamic" weighting mechanism. Therefore, it has been adopted in medical image segmentation tasks with consistently superior performance (after all, it is the measure for evaluating segmentation). A similar effect has also been observed in the label-driven registration tasks. The multi-scale strategy is to mitigate the practical issues on the landmarks with smaller volumes, so they will still produce non-zero gradients even without overlap during training, as shown in the following picture with different types of landmarks being filtered at different scales:
+
+![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/multiscale.jpg "Multiscale Label Filtering") 
 
 The downside of Dice, however, is that it lacks a clear interpretation of the weakly-supervision, leaning towards a general unsupervised learning where any loss function is sensible if it drives the image alignment. The practical difference worth a name of "weak supervision" is perhaps that the loss function is not dependent on the image modality, but applied on segmentation labels which, to certain degree, is closer to traditional feature-based registration method. The neural network is a better way to learn the feature representation. It also reflects the fact that this method, compared with other unsupervised learning, relies on anatomical knowledge in human labelling instead of statistical properties summarised otherwise (e.g. through image-based similarity measures).
 
