@@ -244,7 +244,7 @@ The trained model will be saved in file_model_save under [Train] section specifi
 python3 ~/git/label-reg-demo/inference.py ~/myInferenceConfig.ini
 ```
 
-By default, three files, the ddf, warped_image, warped_label will be saved in dir_save under [Inference] section specified in [config_demo.ini][config_file].
+For demo purpose, three files, the ddf, warped_image and warped_label (if dir_moving_label is supplied) will be saved in dir_save under [Inference] section specified in [config_demo.ini][config_file].
 
 
 That's it. Let me know if any problem.

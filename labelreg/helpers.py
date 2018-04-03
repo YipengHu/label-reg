@@ -184,8 +184,8 @@ class ConfigParser:
                      'dir_moving_image': os.path.join(home_dir, 'data/test/mr_images'),
                      'dir_fixed_image': os.path.join(home_dir, 'data/test/us_images'),
                      'dir_save': os.path.join(home_dir, 'data/'),
-                     'dir_moving_label': os.path.join(home_dir, 'data/test/mr_labels'),
-                     'dir_fixed_label': os.path.join(home_dir, 'data/test/us_labels')}
+                     'dir_moving_label': '',
+                     'dir_fixed_label': ''}
 
         if self.config_type == 'training':
             config = {'Data': data, 'Network': network, 'Loss': loss, 'Train': train}
