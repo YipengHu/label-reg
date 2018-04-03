@@ -2,7 +2,7 @@
 
 
 ## Introduction
-This tutorial aims to use minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was in [Hu et al ISBI2018][Hu2018b]). An efficient re-implementation with many other utilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
+This tutorial aims to use minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work was in [Hu et al ISBI2018][Hu2018b]). An efficient re-implementation with other utilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
 
 * [**1. Multimodal Image Registration**](#section1)
 * [     - Example Data](#section1-1)
@@ -19,15 +19,15 @@ This tutorial aims to use minimum and self-explanatory scripts to re-work the im
 ## <a name="section1"></a>1 Multimodal Image Registration
 Medical image registration aims to find a dense displacement field (DDF), such that a given "moving image" can be warped (transformed using the predicted DDF) to match a second "fixed image", that is, the corresponding anatomical structures are in the same spatial location. 
 
-The definition of "multimodal" varies from changing of imaging parameters (such as MR sequencing or contrast agents) to images from different scanners. An example application here is to support 3D-ultrasound-guided intervention for prostate cancer patients. The ultrasound image looks like this:
+The definition of "multimodal" varies from changing of imaging parameters (such as MR sequencing or contrast agents) to images from different scanners. An example application is to support 3D-ultrasound-guided intervention for prostate cancer patients. The 3D ultrasound image looks like this:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_us.jpg "Ultrasound Image Volume")
 In these procedures, the urologists would like to know where the suspicious regions are, so they can take a tissue sample to confirm pathology, i.e. biopsy, or they may treat certain small areas such as a tumour, i.e. focal therapy. They also want to avoid other healthy delicate surrounding or internal structures such as nerves, urethra, rectum and bladder. However, from ultrasound imaging, it is hard enough to work out the boundaries of the prostate gland, let alone the detailed anatomical and pathological structures. 
 
 MR imaging, on the other hand, provides a better tissue contrast to localise these interesting structures. Here are some example slices from a 3D MR volume:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_mr.jpg "MR Image Volume")
-The catch is that the MR imaging is difficult and expensive to use _during_ those procedures, and requires more imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is), so they are usually available only _before_ the procedure. If the MR image could be aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, becoming useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal article][Hu2018b] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy to implement.
+The catch is that the MR imaging is difficult and expensive to use _during_ those procedures. For examples, they are susceptible to metal instruments and require longer imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is), so they are usually only available _before_ the procedure. If the MR image could be spatially aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, becoming useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal article][Hu2018b] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy to implement.
 
-Using the code from this tutorial, one should be able to re-produce the entire method from training to inference and, possibly, (with a bit linking-up with a GUI of choice) deploying the learned model for some real-time surgical guidance! 
+Using the code from this tutorial, one should be able to re-produce the entire method from training to inference and, possibly (with a bit linking-up with a GUI of choice), to deploy the learned model for some real-time surgical guidance! 
 
 
 ### <a name="section1-1"></a>Example Data
@@ -41,9 +41,9 @@ In summary, for each numbered patient, there is a quartet of data, a 3D MR volum
 
 
 ## <a name="section2"></a>2 Weakly-Supervised Dense Correspondence Learning
-The idea of the weakly-supervised learning is to use expert labels that represent the same anatomical structures. Depending on one's personal viewpoint, this type of label-driven methods may be considered as being "lazy" (e.g. compared to simulating complex biological deformation or engineering sophisticated similarity measure, used in supervised or unsupervised approaches, respectively) or being "industrious" as a great amount manually-annotated anatomical structures in volumetric data are required.
+The idea of the weakly-supervised learning is to use expert labels that represent the same anatomical structures. Depending on one's personal viewpoint, this type of label-driven methods can be considered as being "lazy" (e.g. compared to simulating complex biological deformation or engineering sophisticated similarity measure, used in supervised or unsupervised approaches, respectively) or being "industrious" as a great amount manually-annotated anatomical structures in volumetric data are required.
 
-While the goal is predicting DDF which we do not have ground-truth data for, the method is considered as "weakly-supervised" because the anatomical labels are used only in training. They are treated as if they are the "target labels" instead of "input predictors" in a classical regression analysis. Various formulations of the [weakly-supervised registration](#section4) is discussed and it is not in the papers! ;)
+While the goal is predicting DDF which we do not have ground-truth data for, the method is considered as "weakly-supervised" because the anatomical labels are used only in training. They are treated as if they are the "target labels" instead of "input predictors" in a classical regression analysis. More on the topic of [weakly-supervised registration](#section4) is discussed and it is not in the papers! ;)
 
 The trick here is to use _only_ images (moving and fixed) as input to the neural network without any labels, but the network-predicted DDF can be used to transform the associated labels (from the same images) to match to each other, as shown in the picture:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/training.jpg "Training")
@@ -53,20 +53,22 @@ As a result, labels are not required in the subsequent inference, i.e. the regis
 
 
 ### <a name="section2-1"></a>Label Similarity Measures
-The main problems with label-driven registration methods are labels representing corresponding structures are inherently sparse - among training cases, the same anatomical structures are not always present between a given moving and fixed image pair for training; when available, they neither cover the entire image domain nor detailed voxel correspondence. The following two examples show that 
+If we had landmarks as small as image voxels distributed across the image domain, the learning of dense correspondence (also represented as DDF) becomes a supervised learning problem. The main problems with anatomical-label-driven registration methods are that anatomical labels representing corresponding structures are inherently sparse. Among training cases, the same anatomical structures are not always present on a moving image and on a fixed image; when available, they neither cover the entire image domain nor detailed voxel correspondence. The following two examples show that, for these two cases, prostate glands in blue (possibly the most consistent landmarks that are only ones always available across all cases) may be found on both images for both cases, while _patient-specific_ cysts (orange in the left case) or calcifications (yellow in the right case) can only be identified on a case-by-case basis:
 
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_2cases.jpg "Example Landmarks")
 
-Using cross-entropy to direct measure the loss between two given binary masks (representing the segmentation of the corresponding anatomies) has several problems:
-1 - 
+An efficient implementation of the differentiable Dice with spatial smoothing on labels is introduced here to deal with the sparsity of the labels. The entrance function for the implemented multi-scale Dice is *multi_scale_loss* in [losses.py][loss_file].
 
-Here we adopted an efficient implementation of the differentiable Dice with spatial smoothing on labels to combat these problems. The entrance function for the implemented multi-scale Dice is *multi_scale_loss* in [losses.py][loss_file].
-
-Unfortunately, the use of the Dice lost the intuitive interpretation of the statistical distribution assumed on the label matching. Further discussion is in [Section 4 Weakly-Supervised Registration Revisited](#section4). However, multi-scale Dice works well in practice.
+Although the use of the Dice lost the intuitive interpretation of the statistical distribution assumed on the _weak labels of correspondence_, multi-scale Dice works well in practice as a generic loss function. Further discussion is in [Section 4 Weakly-Supervised Registration Revisited](#section4). However, 
 
 
 ### <a name="section2-2"></a>Convolutional Neural Networks for Predicting Displacements
-The module [networks.py][network_file] implements the networks and some variants in the papers.
+The module [networks.py][network_file] implements the networks and some variants in the papers. The network architecture is a modified encoder-decoder convolutional neural network with two features:
+* several types of shortcut layers, resnet, summation skip layers, additive trilinear upsampling;
+* additive output layers to output a single DDF with shortcuts directly to each resolution level of the entire network.
+The additive output layers can be configured by overwritting the default argument _ddf_levels_ of _LacalNet_ class in [networks.py][network_file].
+
+![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/network_architecture.tif "Network Architecture")
 
 
 ### <a name="section2-3"></a>Deformation Regularisation

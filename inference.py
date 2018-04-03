@@ -1,10 +1,11 @@
 import tensorflow as tf
+import sys
 
-import config
 import labelreg.helpers as helper
 import labelreg.networks as network
 import labelreg.apps as app
 
+config = helper.parse_config_file(sys.argv)
 
 # 1 - images to register
 reader_moving_image, reader_fixed_image, _, _ = helper.get_data_readers(config.Inference.dir_moving_image,

@@ -2,6 +2,7 @@
 import numpy as np
 import nibabel as nib
 import os
+import configparser
 
 
 def get_data_readers(dir_image0, dir_image1, dir_label0=None, dir_label1=None):
@@ -110,3 +111,76 @@ def write_images(input_, file_path=None, file_prefix=''):
                   os.path.join(file_path,
                                file_prefix + '%s.nii' % idx))
          for idx in range(batch_size)]
+
+
+def parse_config_file(argv):
+
+    nargs = len(argv)
+    if nargs == 2:
+        filename = argv[1]
+    else:
+        filename = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                "../config_demo.ini"))
+        if os.path.isfile(filename):
+            print('Use config file in default path: %s.' % filename)
+        else:
+            raise Exception('Missing config file!')
+
+    config_file = configparser.ConfigParser()
+    config_file.read(filename)
+
+    if 'Data' in config_file:
+        if 'dir_moving_image' in config_file['Data']:
+            config.Data.dir_moving_image = config_file['Data']['dir_moving_image']
+        if 'dir_fixed_image' in config_file['Data']:
+            config.Data.dir_fixed_image = config_file['Data']['dir_fixed_image']
+        if 'dir_moving_label' in config_file['Data']:
+            config.Data.dir_moving_label = config_file['Data']['dir_moving_label']
+        if 'dir_fixed_label' in config_file['Data']:
+            config.Data.dir_fixed_label = config_file['Data']['dir_fixed_label']
+
+    if 'Network' in config_file:
+        if 'network_type' in config_file['Network']:
+            config.Network.network_type = config_file['Network']['network_type']
+
+    if 'Loss' in config_file:
+        if 'similarity_type' in config_file['Loss']:
+            config.Loss.similarity_type = config_file['Loss']['similarity_type']
+        if 'similarity_scales' in config_file['Loss']:
+            config_file['Loss']['similarity_scales'] = eval(config_file['Loss']['similarity_scales'])
+        if 'regulariser_type' in config_file['Loss']:
+            config.Loss.regulariser_type = config_file['Loss']['regulariser_type']
+        if 'regulariser_weight' in config_file['Loss']:
+            config.Loss.regulariser_weight = eval(config_file['Loss']['regulariser_weight'])
+
+    if 'Train' in config_file:
+        if 'total_iterations' in config_file['Train']:
+            config.Train.total_iterations = int(eval(config_file['Train']['total_iterations']))
+        if 'minibatch_size' in config_file['Train']:
+            config.Train.minibatch_size = int(eval(config_file['Train']['minibatch_size']))
+        if 'learning_rate' in config_file['Train']:
+            config.Train.learning_rate = eval(config_file['Train']['learning_rate'])
+        if 'freq_info_print' in config_file['Train']:
+            config.Train.freq_info_print = int(eval(config_file['Train']['freq_info_print']))
+        if 'freq_model_save' in config_file['Train']:
+            config.Train.freq_model_save = int(eval(config_file['Train']['freq_model_save']))
+        if 'file_model_save' in config_file['Train']:
+            config.Train.file_model_save = config_file['Train']['file_model_save']
+
+    if 'Inference' in config_file:
+        if 'file_model_saved' in config_file['Inference']:
+            config.Inference.file_model_saved = config_file['Inference']['file_model_saved']
+        if 'dir_moving_image' in config_file['Inference']:
+            config.Inference.dir_moving_image = config_file['Inference']['dir_moving_image']
+        if 'dir_fixed_image' in config_file['Inference']:
+            config.Inference.dir_fixed_image = config_file['Inference']['dir_fixed_image']
+        if 'dir_save' in config_file['Inference']:
+            config.Inference.dir_save = config_file['Inference']['dir_save']
+
+    if 'Test' in config_file:
+        if 'dir_moving_label' in config_file['Test']:
+            config.Test.dir_moving_label = config_file['Test']['dir_moving_label']
+        if 'dir_fixed_label' in config_file['Test']:
+            config.Test.dir_fixed_label = config_file['Test']['dir_fixed_label']
+
+    return config

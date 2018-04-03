@@ -16,7 +16,7 @@ class Loss:
     similarity_type = 'dice'  # 'cross-entropy'
     similarity_scales = [0, 1, 2, 4, 8, 16]  # smaller variances for example data
     regulariser_type = 'bending'  # 'gradient-l2'
-    regulariser_weight = 0.5
+    regulariser_weight = 10
 
 
 class Train:
