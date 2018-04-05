@@ -13,6 +13,7 @@ def get_data_readers(dir_image0, dir_image1, dir_label0=None, dir_label1=None):
     reader_label0 = DataReader(dir_label0) if dir_label0 is not None else None
     reader_label1 = DataReader(dir_label1) if dir_label1 is not None else None
 
+    # some checks
     if not (reader_image0.num_data == reader_image1.num_data):
         raise Exception('Unequal num_data between images0 and images1!')
     if dir_label0 is not None:

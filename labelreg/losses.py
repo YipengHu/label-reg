@@ -66,9 +66,9 @@ def separable_filter3d(vol, kernel):
         strides = [1, 1, 1, 1, 1]
         return tf.nn.conv3d(tf.nn.conv3d(tf.nn.conv3d(
             vol,
-            tf.reshape(kernel, [-1,1,1,1,1]), strides, "SAME"),
-            tf.reshape(kernel, [1,-1,1,1,1]), strides, "SAME"),
-            tf.reshape(kernel, [1,1,-1,1,1]), strides, "SAME")
+            tf.reshape(kernel, [-1, 1, 1, 1, 1]), strides, "SAME"),
+            tf.reshape(kernel, [1, -1, 1, 1, 1]), strides, "SAME"),
+            tf.reshape(kernel, [1, 1, -1, 1, 1]), strides, "SAME")
 
 
 def single_scale_loss(label_fixed, label_moving, loss_type):
@@ -113,7 +113,7 @@ def local_displacement_energy(ddf, energy_type, energy_weight):
         if flag_l1:
             norms = tf.abs(dTdx) + tf.abs(dTdy) + tf.abs(dTdz)
         else:
-            norms = dTdx ** 2 + dTdy ** 2 + dTdz ** 2
+            norms = dTdx**2 + dTdy**2 + dTdz**2
         return tf.reduce_mean(norms, [1, 2, 3, 4])
 
     def compute_bending_energy(displacement):
@@ -126,8 +126,8 @@ def local_displacement_energy(ddf, energy_type, energy_weight):
         dTdxy = gradient_txyz(dTdx, gradient_dy)
         dTdyz = gradient_txyz(dTdy, gradient_dz)
         dTdxz = gradient_txyz(dTdx, gradient_dz)
-        return tf.reduce_mean(dTdxx ** 2 + dTdyy ** 2 + dTdzz ** 2 + 2 * dTdxy ** 2 + 2 * dTdxz ** 2 + 2 * dTdyz ** 2,
-                              [1, 2, 3, 4])
+        return tf.reduce_mean(dTdxx**2 + dTdyy**2 + dTdzz**2 + 2*dTdxy**2 + 2*dTdxz**2 + 2*dTdyz**2, [1, 2, 3, 4])
+
     if energy_weight:
         if energy_type == 'bending':
             energy = compute_bending_energy(ddf)
