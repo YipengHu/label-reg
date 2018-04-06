@@ -133,6 +133,8 @@ def local_displacement_energy(ddf, energy_type, energy_weight):
             energy = compute_bending_energy(ddf)
         elif energy_type == 'gradient-l2':
             energy = compute_gradient_norm(ddf)
+        elif energy_type == 'gradient-l1':
+            energy = compute_gradient_norm(ddf, flag_l1=True)
         else:
             raise Exception('Not recognised local regulariser!')
     else:

@@ -81,8 +81,7 @@ def random_transform_generator(batch_size, corner_scale=.1):
     src_corners = np.tile(np.transpose([[[-1., -1., -1., 1.],
                                          [-1., -1., 1., 1.],
                                          [-1., 1., -1., 1.],
-                                         [1., -1., -1., 1.]]], [0, 1, 2]),
-                          [batch_size, 1, 1])
+                                         [1., -1., -1., 1.]]], [0, 1, 2]), [batch_size, 1, 1])
     transforms = np.array([np.linalg.lstsq(src_corners[k], new_corners[k], rcond=-1)[0]
                            for k in range(src_corners.shape[0])])
     transforms = np.reshape(np.transpose(transforms[:][:, :][:, :, :3], [0, 2, 1]), [-1, 1, 12])
@@ -119,6 +118,9 @@ class ConfigParser:
 
         nargs_ = len(argv)
         if nargs_ == 2:
+            if (argv[1] == '-h') or (argv[1] == '-help'):
+                self.print_help()
+                exit()
             filename_ = argv[1]
         else:
             filename_ = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../config_demo.ini"))
@@ -154,9 +156,11 @@ class ConfigParser:
         return self.config[key]
 
     def print(self):
+        print('')
         for section_key, section_value in self.config.items():
                 for key, value in section_value.items():
-                    print('[''%s'']: %s = %s' % (section_key, key, value))
+                    print('[''%s'']: %s: %s' % (section_key, key, value))
+        print('')
 
     def get_defaults(self):
 
@@ -196,4 +200,27 @@ class ConfigParser:
             config = {'Data': data, 'Network': network, 'Loss': loss, 'Train': train, 'Inference': inference}
 
         return config
+
+    @staticmethod
+    def print_help():
+        print('\n'.join([
+            '',
+            '- Weakly-Supervised Convolutional Neural Networks for Multimodal Image Registration',
+            '- 2018 Yipeng Hu <yipeng.hu@ucl.ac.uk>',
+            '- LabelReg package is licensed under: http://www.apache.org/licenses/LICENSE-2.0',
+            '',
+            'Training script:',
+            '   python3 training.py myConfig.ini',
+            'Inference script:',
+            '   python3 inference.py myConfig.ini',
+            '',
+            'Options in config file myConfig.ini:',
+            '   network_type:       {local, global, composite}',
+            '   similarity_type:    {dice, cross-entropy, mean-squared, jaccard}',
+            '   regulariser_type:   {bending, gradient-l2, gradient-l1}',
+            '   See other parameters in the template config file.',
+            ''
+        ]))
+
+
 

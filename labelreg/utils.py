@@ -9,13 +9,11 @@ def warp_grid(grid, theta):
     # grid=grid_reference
     num_batch = int(theta.get_shape()[0])
     theta = tf.cast(tf.reshape(theta, (-1, 3, 4)), 'float32')
-    size_i = int(grid.get_shape()[0])
-    size_j = int(grid.get_shape()[1])
-    size_k = int(grid.get_shape()[2])
-    grid = tf.concat([tf.transpose(tf.reshape(grid, [-1, 3])), tf.ones([1, size_i*size_j*size_k])], axis=0)
+    size = grid.get_shape().as_list()
+    grid = tf.concat([tf.transpose(tf.reshape(grid, [-1, 3])), tf.ones([1, size[0]*size[1]*size[2]])], axis=0)
     grid = tf.reshape(tf.tile(tf.reshape(grid, [-1]), [num_batch]), [num_batch, 4, -1])
     grid_warped = tf.matmul(theta, grid)
-    return tf.reshape(tf.transpose(grid_warped, [0, 2, 1]), [num_batch, size_i, size_j, size_k, 3])
+    return tf.reshape(tf.transpose(grid_warped, [0, 2, 1]), [num_batch, size[0], size[1], size[2], 3])
 
 
 def resample_linear(inputs, sample_coords):
@@ -76,7 +74,7 @@ def compute_centroid_distance(input1, input2, grid=None):
         grid = get_reference_grid(input1.get_shape()[1:4])
 
     def compute_centroid(mask, grid0):
-        return tf.stack([tf.reduce_mean(tf.boolean_mask(grid0, mask[i,:,:,:,0]>=0.5), axis=0)
+        return tf.stack([tf.reduce_mean(tf.boolean_mask(grid0, mask[i, ..., 0] >= 0.5), axis=0)
                          for i in range(mask.shape[0].value)], axis=0)
     c1 = compute_centroid(input1, grid)
     c2 = compute_centroid(input2, grid)
