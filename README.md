@@ -29,6 +29,8 @@ MR imaging, on the other hand, provides a better tissue contrast to localise the
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_mr.jpg "MR Image Volume")
 The catch is that the MR imaging is difficult and expensive to use _during_ those procedures. For examples, they are susceptible to metal instruments and require longer imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is), so they are usually only available _before_ the procedure. If the MR image can be spatially aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, very useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal article][Hu2018a] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy-to-implement.
 
+In this set-up, the ultrasound images will be considered as the _fixed image_, while the MR image will be the _moving image_. It is only a practical choice to avoid unecessary extrapolation, such that, when warping, the intensities from the image with larger field-of-view (usually the case of MR) can be re-sampled at the (ultrasound) image coordinates that cover smaller field-of-view.
+
 
 ### <a name="section1-1"></a>Example Data
 Due to medical data restrictions, this tutorial uses some fake (fewer and smaller) data to mimic those from the prostate imaging application. You can download these by clicking the following link:
@@ -57,7 +59,7 @@ If we had landmarks as small as image voxels densely populated across the image 
 
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_2cases.jpg "Example Landmarks")
 
-An efficient implementation of the differentiable Dice with spatial smoothing on labels is used here to deal with the sparsity of the labels. The entrance function for the implemented multi-scale Dice is *multi_scale_loss* in [losses.py][loss_file].
+An efficient implementation of the differentiable Dice with spatial smoothing on labels is used here to deal with the label sparsity. The entrance function for the implemented multi-scale Dice is *multi_scale_loss* in [losses.py][loss_file].
 
 Although the use of the Dice lost the intuitive interpretation of the statistical distribution assumed on the _weak labels of correspondence_, multi-scale Dice works well in practice as a generic loss function. Further discussion is in [Section 4 Weakly-Supervised Registration Revisited](#section4).
 
@@ -72,7 +74,7 @@ The additive output layers can be configured by overwriting the default argument
 
 
 ### <a name="section2-3"></a>Deformation Regularisation
-Partly due to the sparsity of the training labels, regularisation of the predicted deformation files is essential. Borrowing the regularisation strategy used in traditional image registration algorithms as well as those from classical mechanics, some form of smoothness of the entire displacement field is penalised in addition to the [label similarity measures](#section2-1). The main function implementing bending energy is *compute_bending_energy* in [losses.py][loss_file], among other choices.
+Partly due to the sparsity of the training labels, regularisation of the predicted deformation files is essential. Borrowing the regularisation strategy used in traditional image registration algorithms as well as those from classical mechanics, usually, smoothness of the entire displacement field is penalised in addition to the [label similarity measures](#section2-1). In essence, these functions measure how non-smooth the DDF is, based on the first- and/or second order derivatives of the displacemnt w.r.t. the spatial (image) coordinates. The main function implementing bending energy is *compute_bending_energy* in [losses.py][loss_file], among other choices.
 
 
 ### <a name="section2-4"></a>Training
@@ -200,7 +202,7 @@ ddf = sess.run(reg_net.ddf, feed_dict=testFeed)
 And, that's it for inference.
 
 
-Depending on the application, the predicted DDF can be used in many ways, such as a) warping the moving MR images given a real-time ultrasound image, 2) warping a binary image representing segmentation(s) on the moving MR image (such as a tumour), 3) transforming the real-time information (such as surgical instrument position) back to the MR image space or 4) transforming a MR-defined point cloud to ultrasound imaging coordinates (N.B. in this case an inverting of the predicted transformation may be required). This tutorial demonstrates a function using TensorFlow ([apps.py][app_file]) to warp MR images or MR-defined labels in batches on GPU:
+Depending on the application, the predicted DDF can be used in several ways, such as a) warping the moving MR images given a real-time ultrasound image, 2) warping a binary image representing segmentation(s) on the moving MR image (such as a tumour), 3) transforming the real-time information (such as surgical instrument position) back to the MR image space or 4) transforming a MR-defined point cloud to ultrasound imaging coordinates (N.B. in this case an inverting of the predicted transformation may be required). This tutorial demonstrates a function using TensorFlow ([apps.py][app_file]) to warp MR images or MR-defined labels in batches on GPU:
 
 ```python
 warped_images = app.warp_volumes_by_ddf(reader_moving_image.get_data(), ddf)
@@ -213,9 +215,18 @@ Example code is in the top-level [inference.py][inference_file], which can also 
 
 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
-[TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, sys, time and nibabel (for file IO only). All are easily available if not already installed. 
+[TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, sys, time and nibabel (for file IO only), all easily available if not already installed. Get a copy of the code, e.g. on linux:
 
-Files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quartets of moving-and-fixed image-and-label data should be organised as follows in order to run the code without modification:
+```
+git clone https://gitlab.com/yipeng/label-reg-demo
+```
+
+or:
+
+[**Download Code** (zip file)][code]
+
+
+Data files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quartets of moving-and-fixed image-and-label data should be organised as follows in order to run the code without modification:
 
 * The training data should be in separate folders and the folder names are specified under the [Data] section in the [config_demo.ini][config_file], for example:
 
@@ -253,7 +264,7 @@ That's it. Let me know if any problem.
 
 
 ## <a name="section4"></a>4 Weakly-Supervised Registration Revisited
-First, **weakly-supervised learning** is not a rigorously defined term. It was not mentioned at all in [Ian Goodfellow's Deep Learning book][TheDeepLearningBook]. Strictly speaking, the registration method used here is still an unsupervised regression without the labels for targets (i.e. the displacements) need to be predicted. The target labels of registration should be ground-truth displacement fields which are (the main point for this type of method) not easily available. An alternative form of displacement field is a "correspondence table" indicating where in the fixed image coordinates every voxel in moving image should move to. One way to go about the weak labels is to consider the anatomical labels arranged in such a table, but corrupted with non-i.i.d. noise. All the voxels in an anatomical region (defined by the segmentation labels) on one image, should be more likely to be in the same region on another image. With added nuisance of inconsistently available types of anatomical landmarks, a naive multi-class implementation of such a correspondence table would be very sparse. The initial work [Hu et al ISBI2018][Hu2018b] explored the idea to consider, instead, a two-class classification problem, where the abstract concept of correspondence is used, two voxels (after warping) are considered being correspondent or not correspondent. In this case, the segmentations of different types of anatomical regions become noise-corrupted _data_ of these correspondence, that is, being correspondent if both are foreground 1s or both are background 0s, not correspondent otherwise. A well-defined cross-entropy was used to measure the overall classification loss. 
+First, **weakly-supervised learning** is not a rigorously defined term. It was not mentioned at all in [Ian Goodfellow's Deep Learning book][TheDeepLearningBook]. Strictly speaking, the registration method used here is still an unsupervised regression without the labels for targets (i.e. the displacements) that need to be predicted. The target labels of registration should be ground-truth displacement fields which are not easily available (the main point that motivates this method). An alternative form of displacement field is a "correspondence table" indicating where in the fixed image coordinates every voxel in moving image should move to. One way to go about the weak labels is to consider the anatomical labels arranged in such a table, but corrupted with non-i.i.d. noise. All the voxels in an anatomical region (defined by the segmentation labels) on one image, should be more likely to be in the same region on another image. With added nuisance of inconsistently available types of anatomical landmarks, a naive multi-class implementation of such a correspondence table would be very sparse. The initial work [Hu et al ISBI2018][Hu2018b] explored the idea to consider, instead, a two-class classification problem, where the abstract concept of correspondence is used, two voxels (after warping) are considered being correspondent or not correspondent. In this case, the segmentations of different types of anatomical regions become noise-corrupted _data_ of these correspondence, that is, being correspondent if both are foreground 1s or both are background 0s, not correspondent otherwise. A well-defined cross-entropy was used to measure the overall classification loss. 
 
 The main problem with the two-class formulation is about weighting. The cross-entropy assumes no difference between voxel locations are nearer to boundaries and those are not. It does not distinguish difference between foreground and background, which can be substantially altered by imaging parameters (such as acquired fields of view), or which type of anatomical regions the (non)correspondence voxels come from. For example, a voxel in the foreground segmentation of the gland should, without any other information, be a _weaker_ correspondence label than that from a foreground voxel from very small landmark, as the latter is a very _strong_ predictor for where this voxel should move to, although it helps very little to indicate the displacement field everywhere else. This is why some heavy heuristic preprocessing label smoothing was used.
 
@@ -269,6 +280,7 @@ Even with unlimited data pairs, there is a physical bounds of the label availabi
 
 
 [data]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/data.zip
+[code]: https://gitlab.com/Yipeng/label-reg-demo/repository/master/archive.zip
 
 [config_file]: ./config_demo.ini
 [loss_file]: ./labelreg/losses.py
