@@ -64,21 +64,22 @@ Although the use of the Dice lost the intuitive interpretation of the statistica
 
 
 ### <a name="section2-2"></a>Convolutional Neural Networks for Predicting Displacements
-_Network_ has a subtly different meaning, compare with those does elsewhere, where any layers having gradient passing through would be considered as a part of the network. For conceptually emphasize the difference, a registration network is only a part of computation graph (in TensorFlow language) that accepts a pair of images and predicts a DDF. The entire graph has other components/layers to construct the loss function, including warping labels and computing multiscale Dice for instance. 
+_Network_ has a subtly different meaning, compare with those considering any layers having gradient passing through as a part of the network. For conceptually emphasize the difference, a registration network is only a part of computation graph (in TensorFlow language) that accepts a pair of images and predicts a DDF. The entire graph has other components/layers to construct the loss function, including warping labels and computing multiscale Dice for instance. 
 
 The module [networks.py][network_file] implements the main registration network and some variants. The network architecture is a modified encoder-decoder convolutional neural network with two features:
 * Several types of shortcut layers, resnet, summation skip layers, additive trilinear upsampling;
 * Additive output layers to output a single DDF with shortcuts directly to each resolution level of the entire network.
+
 The details of some motivation of the architectural features are explained in the paper. More options, such as the additive output layers, can be configured by overwriting the default argument _ddf_levels_ of _LacalNet_ class in [networks.py][network_file], which is the default _network_type_ capable of predicting nonrigid displacements.
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/network_architecture.jpg "Network Architecture")
 
 
 ### <a name="section2-3"></a>Deformation Regularisation
-Partly due to the sparsity of the training labels, regularisation of the predicted deformation files is essential. Borrowing the regularisation strategy used in traditional image registration algorithms as well as those from classical mechanics, smoothness of the entire displacement field is penalised in addition to the [label similarity measures](#section2-1). In essence, these functions measure how non-smooth the DDF is, based on the first- and/or second order derivatives of the displacemnt w.r.t. the spatial (image) coordinates. The main function implementing default _regulariser_type_ **bending energy** can be found in *compute_bending_energy* in [losses.py][loss_file], among other choices of regularisation.
+Partly due to the sparsity of the training labels, regularisation of the predicted deformation files is essential. Borrowing the regularisation strategy used in traditional image registration algorithms as well as those from classical mechanics, smoothness of the entire displacement field is penalised in addition to the [label similarity measures](#section2-1). In essence, these functions measure how non-smooth the DDF is, based on the first- and/or second order derivatives of the displacement w.r.t. the spatial (image) coordinates. The main function implementing default _regulariser_type_ **bending energy** can be found in *compute_bending_energy* in [losses.py][loss_file], among other choices of regularisation.
 
 
 ### <a name="section2-4"></a>Training
-* **Training-Step-1 (data)**:
+* **Training-Step-1 (Data)**:
 First, get the data reader objects and other data information with the readers:
 ```python
 reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label = helper.get_data_readers(
@@ -88,7 +89,7 @@ reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label
     '~/git/label-reg-demo/data/train/us_labels')
 ```
 
-* **Training-Step-2 (graph)**:
+* **Training-Step-2 (Graph)**:
 Placeholders for **4** pairs of moving and fixed images and affine transformation parameters with size of **[1, 12]** for data augmentation:
 ```python
 ph_moving_image = tf.placeholder(tf.float32, [4]+reader_moving_image.data_shape+[1])
@@ -135,8 +136,8 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type='dice',
 ```
 The default _similarity_scales_ (in unit of voxel) are fewer than what used for real data as the reduced size of the example data. For a rule of thumb, this may be chosen so the 3 times of the largest standard deviation can cover the majority of the image domain. The _regulariser_weight_ will be dependent on data and application, such as how sparse the training labels are.
 
-* **Training-Step-3** (Optimisation):
-Adam is the favourite optimiser here with default settings with an initial learning rate around 1e-5 (it may need to be tuned down if the network_type is set to 'global' or 'composite'):
+* **Training-Step-3 (Optimisation)**:
+Adam is the favourite optimiser here with default settings with an initial learning rate around 1e-5 (it may need to be tuned down if the network_type is set to 'global' or 'composite'): 
 ```python
 train_op = tf.train.AdamOptimizer(1e-5).minimize(loss_similarity+loss_regulariser)
 ```
@@ -158,7 +159,7 @@ train_indices = [i for i in range(reader_moving_label.num_data)]
 
 Two utility computing nodes are also included for monitoring the training process. Here, the binary Dice, _dice_, and distance between centroids, _dist_, are implemented in [utils.py][util_file]. 
 
-The Dice scores should be consistently above 0.90 after a few thousand iterations on the gland segmentation labels (for convenience, gland segmentations are always the first landmark, i.e. label_index=0, in the example data. But this is not a requirement and will be shuffled before feeding.) The top-level scripts, [training.py][training_file] contains all the necessary training code with simple file IO support. Read the [Section 3](#section3) for more information on how to run the code with real imaging data.
+The Dice scores should be consistently above 0.90 after a few thousand iterations on the gland segmentation labels (for convenience, gland segmentations are always the first landmark, i.e. _label_index=0_, in the example data. But this is not a requirement and will be shuffled before feeding.) The top-level scripts, [training.py][training_file] contains all the necessary training code with simple file IO support. Read the [Section 3](#section3) for more information on how to run the code with real imaging data.
 
 
 ### <a name="section2-5"></a>Inference
@@ -203,7 +204,7 @@ Example inference script is in the top-level [inference.py][inference_file], whi
 
 
 ## <a name="section3"></a>3 Try with Your Own Image-Label Data
-**Obtain a copy of the code**
+**Obtain a copy of the code** 
 [TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, sys, time and nibabel (for file IO only), all easily available if not already installed. Get a copy of the code, e.g. on linux:
 ```
 git clone https://gitlab.com/yipeng/label-reg-demo
@@ -213,7 +214,7 @@ or download from here:
 [**Download Code** (zip file)][code]
 
 
-**Prepare images and labels**
+**Prepare images and labels** 
 Data files readable by [NiBabel][nibabel] should work with the DataReader in [helpers.py][helper_file]. The quartets of moving-and-fixed image-and-label data should be organised as follows in order to run the code without modification:
 
 * The training data should be in separate folders and the folder names are specified under the [Data] section in the [config_demo.ini][config_file], for example:
@@ -229,7 +230,7 @@ dir_fixed_label = ~/git/label-reg-demo/data/train/us_labels
 * Each label file contains a 4D volume with 4th dimension contains different landmarks delineated from the associated image volume. The segmented-foreground and background are represented by or convertable to float32 0s and 1s, respectively;
 * The number of landmarks can be variable (and large) across patients/subjects, but has to be the same within each pair from the same patient/subject, between _moving label_ and _fixed label_ (i.e. representing corresponding landmark pairs);
 * The image and each of its landmark (one 3D volume in the 4D label) should have the same shape, while the moving and fixed data do not need to have the same shape;
-* If inference or test is needed, also specify those folder names in Inference [config_demo.ini][config_file].
+* If inference or test is needed, also specify those folder names under [Inference] section in [config_demo.ini][config_file].
 
 One can customise a config file to specify other parameters mentioned in the tutorial. Use the same [config_demo.ini][config_file] file as a template. Both [training.py][training_file] and [inference.py][inference_file] can take a command line argument for the customised config file path, for example:
 ```python
@@ -245,7 +246,7 @@ For demo purpose, three files, the ddf, warped_image and warped_label (if dir_mo
 
 That's it. 
 
-A little disclaimer - this is a re-worked code based on the original experimental code, for readability, simplicity and some modularity, but with very little test. So, let me know if any problems.
+* A little disclaimer - this is a re-worked code based on the original experimental code, for readability, simplicity and some modularity, but with very little test. So, let me know if any problems.
 
 
 ## <a name="section4"></a>4 Weakly-Supervised Registration Revisited
@@ -258,7 +259,7 @@ Overlap measures, such as Dice, have an interesting quality to re-weight between
 
 It may be the case that, due to the nature of weakly-supervised learning, different formulations of the loss function, or the combination of the loss and the regularisation, is only a different weighting strategy to "guess" the dense correspondence. Without ground-truth (for training and validation), this will inherently be dependent on image modalities and applications. Therefore, it may be better to investigate application-specific loss function (such as better surrogates of the true TREs on regions of interest).
 
-The downside of Dice, however, is that it lacks a clear interpretation of the weakly-supervision, leaning towards a general unsupervised learning where any loss function is sensible if it drives the image alignment. The practical difference worth a name such as "weak supervision" is perhaps that the loss function is not dependent on the image modality, only applied on segmentation labels. This, to certain degree, may be closer to traditional feature-based registration method, while the role of neural network is a better way to learn the feature representation. It also reflects the fact that this method, compared with other unsupervised learning, relies on anatomical knowledge in human labelling instead of statistical properties summarised otherwise (e.g. through image-based similarity measures).
+The downside of Dice, however, is that it lacks a clear interpretation of the weak-supervision, leaning towards a general unsupervised learning where any loss function is sensible if it drives the image alignment. The practical difference worth a name such as "weak supervision" is perhaps that the loss function is not dependent on the image modality, only applied on segmentation labels. This, to certain degree, may be closer to traditional feature-based registration method, while the role of neural network is a better way to learn the feature representation. It also reflects the fact that this method, compared with other unsupervised learning, relies on anatomical knowledge in human labelling instead of statistical properties summarised otherwise (e.g. through image-based similarity measures).
 
 Even with unlimited data pairs, there is a physical bounds of the label availability partly due to the underlying imaging process that simply do not produce voxel-level correspondence information and partly due to limited anatomical knowledge. In this case, prior knowlege on application-specific physical transformation (instead of bending energy for instance) and combining with other intensity-based similarity might provide further assitance.
 
