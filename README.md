@@ -137,7 +137,8 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type='dice',
 The default _similarity_scales_ (in unit of voxel) are fewer than what used for real data as the reduced size of the example data. For a rule of thumb, this may be chosen so the 3 times of the largest standard deviation can cover the majority of the image domain. The _regulariser_weight_ will be dependent on data and application, such as how sparse the training labels are.
 
 * **Training-Step-3 (Optimisation)**:
-Adam is the favourite optimiser here with default settings with an initial learning rate around 1e-5 (it may need to be tuned down if the network_type is set to 'global' or 'composite'):
+Adam is the favourite optimiser here with default settings with an initial learning rate around 1e-5, which may need to be tuned down if the network_type is set to 'global' or 'composite'.
+
 ```python
 train_op = tf.train.AdamOptimizer(1e-5).minimize(loss_similarity+loss_regulariser)
 ```
