@@ -138,7 +138,6 @@ The default _similarity_scales_ (in unit of voxel) are fewer than what used for 
 
 * **Training-Step-3 (Optimisation)**:
 Adam is the favourite optimiser here with default settings with an initial learning rate around 1e-5, which may need to be tuned down if the network_type is set to 'global' or 'composite'.
-
 ```python
 train_op = tf.train.AdamOptimizer(1e-5).minimize(loss_similarity+loss_regulariser)
 ```
@@ -240,9 +239,15 @@ python3 ~/git/label-reg-demo/training.py ~/myTrainingConfig.ini
 The trained model will be saved in file_model_save under [Train] section specified in [config_demo.ini][config_file].
 
 ```python
-python3 ~/git/label-reg-demo/inference.py ~/myInferenceConfig.ini
+python3 inference.py  myInferenceConfig.ini
 ```
 For demo purpose, three files, the ddf, warped_image and warped_label (if dir_moving_label under [Inference] is supplied in [config_demo.ini][config_file]) will be saved in dir_save under [Inference] section specified in [config_demo.ini][config_file].
+
+For a list of currently available the top-level options:
+```python
+python3 training.py -help
+python3 inference.py -help
+```
 
 
 That's it. 
