@@ -243,7 +243,7 @@ python3 inference.py  myInferenceConfig.ini
 ```
 For demo purpose, three files, the ddf, warped_image and warped_label (if dir_moving_label under [Inference] is supplied in [config_demo.ini][config_file]) will be saved in dir_save under [Inference] section specified in [config_demo.ini][config_file].
 
-For a list of currently available the top-level options:
+For a list of currently available top-level options:
 ```python
 python3 training.py -help
 python3 inference.py -help
@@ -268,6 +268,10 @@ It may be the case that, due to the nature of weakly-supervised learning, differ
 The downside of Dice, however, is that it lacks a clear interpretation of the weak-supervision, leaning towards a general unsupervised learning where any loss function is sensible if it drives the image alignment. The practical difference worth a name such as "weak supervision" is perhaps that the loss function is not dependent on the image modality, only applied on segmentation labels. This, to certain degree, may be closer to traditional feature-based registration method, while the role of neural network is a better way to learn the feature representation. It also reflects the fact that this method, compared with other unsupervised learning, relies on anatomical knowledge in human labelling instead of statistical properties summarised otherwise (e.g. through image-based similarity measures).
 
 Even with unlimited data pairs, there is a physical bounds of the label availability partly due to the underlying imaging process that simply do not produce voxel-level correspondence information and partly due to limited anatomical knowledge. In this case, prior knowlege on application-specific physical transformation (instead of bending energy for instance) and combining with other intensity-based similarity might provide further assitance.
+
+
+**Acknowledgement** 
+
 
 
 
