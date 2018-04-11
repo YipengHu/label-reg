@@ -138,6 +138,7 @@ The default _similarity_scales_ (in unit of voxel) are fewer than what used for 
 
 * **Training-Step-3 (Optimisation)**:
 Adam is the favourite optimiser here with default settings with an initial learning rate around 1e-5, which may need to be tuned down if the network_type is set to 'global' or 'composite'.
+
 ```python
 train_op = tf.train.AdamOptimizer(1e-5).minimize(loss_similarity+loss_regulariser)
 ```
@@ -271,7 +272,7 @@ Even with unlimited data pairs, there is a physical bounds of the label availabi
 
 
 **Acknowledgement** 
-
+The author is grateful for a CMIC Platform Fellowship and a Medical Image Analysis Network Knowladge Exchange Scheme, both funded by UK EPSRC.
 
 
 
