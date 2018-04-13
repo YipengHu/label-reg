@@ -4,7 +4,9 @@
 flag_plot = false;
 
 voxsize_in = 0.8;
-voxsize_out = 0.4;
+voxsize_out = 0.8;
+
+data_sample_interval = 1;
 
 
 normFolder = fullfile(getenv('HOME'),'/Scratch/data/mrusv2/normalised');
@@ -29,7 +31,7 @@ NumLandmarks_mr = h5read(h5fn_label_mr,'/num_labels');
 
 addpath ../../igitk/external/nifti/
 nn = 0;
-for n = 1:4:108
+for n = 1:data_sample_interval:108
     
     GroupName = sprintf('/case%06d',n-1);
     

@@ -2,7 +2,7 @@
 
 
 ## Introduction
-This tutorial aims to provide minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work in [Hu et al ISBI2018][Hu2018b]). A re-implementation with other utilities is available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
+This tutorial aims to provide minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work in [Hu et al ISBI2018][Hu2018b]). A re-implementation with other utilities is also available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
 
 * [**1. Multimodal Image Registration**](#section1)
 * [     - Example Data](#section1-1)
@@ -19,7 +19,7 @@ Using the code from this tutorial, one should be able to re-produce the entire m
 
 
 ## <a name="section1"></a>1 Multimodal Image Registration
-Medical image registration aims to find a dense displacement field (DDF), such that a given "moving image" can be warped (transformed or spatially resampled using the predicted DDF) to match a second "fixed image". _Matching_ usually means the same anatomical structures are aligned at the same spatial locations, technically, establshing dense corespondence. A DDF is typically a set of displacements (in x-, y- and z components) defined at every voxel in the fixed image coordinates, so each set is about three times of the size of the fixed image. They usually are inverted displacemnts (i.e. from fixed to moving) to resample intensities from fixed image (which is the one being _warped_ to moving image coordinates). 
+Medical image registration aims to find a dense displacement field (DDF), such that a given "moving image" can be warped (transformed or spatially resampled using the predicted DDF) to match a second "fixed image". _Matching_ in the example application means the same anatomical structures are aligned at the same spatial locations, technically also known as establshing dense corespondence. A DDF is typically a set of displacements (in x-, y- and z components) defined at every voxel in the fixed image coordinates, so each set is about three times of the size of the fixed image. They usually are inverted displacemnts (i.e. from fixed to moving) to resample intensities from fixed image (which is the one being _warped_ to moving image coordinates). 
 
 The definition of "multimodal" varies from changing of imaging parameters (such as MR sequencing or contrast agents) to images from different scanners. An example application is to support 3D-ultrasound-guided intervention for prostate cancer patients. The 3D ultrasound image looks like this:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_us.jpg "Ultrasound Image Volume")
