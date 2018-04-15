@@ -33,7 +33,7 @@ In this application, the ultrasound images will be considered as the _fixed imag
 
 
 ### <a name="section1-1"></a>Example Data
-Due to medical data restrictions, this demo uses some fake (fewer and smaller) data for tutorial purpose. They can be downloaded by clicking the following link:
+This demo uses some make-beleive (fewer, smaller and blurred) data for tutorial purpose. They can be downloaded by clicking the following link:
 
 [**Download Example Data**][data]
 
@@ -55,7 +55,7 @@ As a result, labels are not required in the subsequent inference, i.e. the regis
 
 
 ### <a name="section2-1"></a>Label Similarity Measures
-If we had landmarks as small as image voxels densely populated across the image domain, learning dense correspondence (also represented as DDF) becomes a supervised learning problem. The main problem with anatomical-label-driven registration methods is that anatomical labels representing corresponding structures are inherently sparse. Among training cases, the same anatomical structures are not always present on a moving image and on a fixed image; when available, they neither cover the entire image domain nor detailed voxel correspondence. The following two examples show that, for these two cases, prostate glands in blue (possibly the most consistent landmarks that are only ones always available across all cases) may be found on both images for both cases, while _patient-specific_ cysts (orange in the left case) or calcifications (yellow in the right case) can only be identified on a case-by-case basis:
+If we had landmarks as small as image voxels densely populated across the image domain, learning dense correspondence (also represented as DDF) becomes a supervised learning problem. The challenge is that anatomical labels representing corresponding structures are inherently sparse. Among training cases, the same anatomical structures are not always present on a moving image and on a fixed image; when available, they neither cover the entire image domain nor detailed voxel correspondence. The following two examples show that, for these two cases, prostate glands in blue (possibly the most consistent landmarks that are only ones always available across all cases) may be found on both images for both cases, while _patient-specific_ cysts (orange in the left case) or calcifications (yellow in the right case) can only be identified on a case-by-case basis:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/landmarks_2cases.jpg "Example Landmarks")
 
 An efficient implementation of the differentiable Dice with spatial smoothing on labels is used here to deal with the label sparsity. The entrance function for the implemented multi-scale Dice is *multi_scale_loss* in [losses.py][loss_file].
