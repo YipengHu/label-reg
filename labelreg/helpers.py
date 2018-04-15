@@ -205,12 +205,12 @@ class ConfigParser:
     def print_help():
         print('\n'.join([
             '',
-            '**************************************************',
+            '************************************************************',
+            '  Weakly-Supervised CNNs for Multimodal Image Registration',
+            '      2018 Yipeng Hu <yipeng.hu@ucl.ac.uk> ',
             '  LabelReg package is licensed under: ',
             '      http://www.apache.org/licenses/LICENSE-2.0',
-            '  2018 Yipeng Hu <yipeng.hu@ucl.ac.uk> ',
-            '  Weakly-Supervised Convolutional Neural Networks for Multimodal Image Registration',
-            '**************************************************',
+            '************************************************************',
             '',
             'Training script:',
             '   python3 training.py myConfig.ini',

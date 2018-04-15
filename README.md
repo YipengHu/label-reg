@@ -2,7 +2,7 @@
 
 
 ## Introduction
-This tutorial aims to provide minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work in [Hu et al ISBI2018][Hu2018b]). A re-implementation with other utilities is also available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
+This demo provides minimum and self-explanatory scripts to re-work the implementation of a deep-learning-based image registration method in [Hu et al 2018][Hu2018a] (and the preliminary work in [Hu et al ISBI2018][Hu2018b]). A re-implementation with other utilities is also available at [NiftyNet Platform][niftynet]. The sections are organised as follows:
 
 * [**1. Multimodal Image Registration**](#section1)
 * [     - Example Data](#section1-1)
@@ -15,7 +15,7 @@ This tutorial aims to provide minimum and self-explanatory scripts to re-work th
 * [**3. Try with Your Own Image-Label Data**](#section3)
 * [**4. Weakly-Supervised Registration Revisited**](#section4)
 
-Using the code from this tutorial, one should be able to re-produce the entire method from training to inference and, possibly (with a bit linking-up with a GUI of choice), to deploy the learned model for some real-time surgical guidance! 
+Using this code, one should be able to re-produce the entire method from training to inference and, possibly (with a bit linking-up with a GUI of choice), to deploy the learned model for some real-time surgical guidance! 
 
 
 ## <a name="section1"></a>1 Multimodal Image Registration
@@ -27,13 +27,13 @@ In these procedures, the urologists would like to know where the suspicious regi
 
 MR imaging, on the other hand, provides a better tissue contrast (for human eyes anyway) to localise these interesting structures. Here are some example slices from a 3D MR volume:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/volume_mr.jpg "MR Image Volume")
-The catch is that the MR imaging is difficult and expensive to use _during_ those procedures. For examples, they are susceptible to metal instruments and require longer imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is, let alone the radiologist's full report), so they are usually only available _before_ the procedure. If the MR image can be spatially aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, very useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal article][Hu2018a] provides many references and examples describing the detailed difficulties and attempted solutions. This tutorial describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy-to-implement.
+The catch is that the MR imaging is difficult and expensive to use _during_ those procedures. For examples, they are susceptible to metal instruments and require longer imaging time (you might need to wait half hour to get full multi-parametric sequences to reliably find where the tumour is, let alone the radiologist's full report), so they are usually only available _before_ the procedure. If the MR image can be spatially aligned with the ultrasound image in real-time, all the information can then be "registered" from the MR to the ultrasound images, very useful during the ultrasound-guided procedures. It sounds like a good solution, but it turned out to be a very difficult problem, stimulating a decade-long research topic. The [journal article][Hu2018a] provides many references and examples describing the detailed difficulties and attempted solutions. This demo describes an alternative using deep learning method. The main advantage is the resulting registration between the 3D data is fast (several 3D registrations in one second), fully-automated and easy-to-implement.
 
 In this application, the ultrasound images will be considered as the _fixed image_, while the MR image will be the _moving image_. It is only a practical choice to avoid unecessary extrapolation, such that, when warping, the intensities from the image with larger field-of-view (usually the case of MR) can be resampled at the (ultrasound) image coordinates that cover smaller field-of-view.
 
 
 ### <a name="section1-1"></a>Example Data
-Due to medical data restrictions, this tutorial uses some fake (fewer and smaller) data for tutorial purpose. They can be downloaded by clicking the following link:
+Due to medical data restrictions, this demo uses some fake (fewer and smaller) data for tutorial purpose. They can be downloaded by clicking the following link:
 
 [**Download Example Data**][data]
 
@@ -193,7 +193,7 @@ ddf = sess.run(reg_net.ddf, feed_dict=testFeed)
 Technically, that's it for inference.
 
 
-Depending on the application, the predicted DDF can be used in several ways, such as **a)** warping the moving MR images given a real-time ultrasound image, **b)** warping a binary image representing segmentation(s) on the moving MR image (such as a tumour), **c)** transforming the real-time information (such as surgical instrument position) back to the MR image space or **d)** transforming a MR-defined point cloud to ultrasound imaging coordinates (N.B. in this case an inverting of the predicted transformation may be required). This tutorial demonstrates a function _warp_volumes_by_ddf_ using TensorFlow ([apps.py][app_file]) to warp MR images or MR-defined labels in batches on GPU:
+Depending on the application, the predicted DDF can be used in several ways, such as **a)** warping the moving MR images given a real-time ultrasound image, **b)** warping a binary image representing segmentation(s) on the moving MR image (such as a tumour), **c)** transforming the real-time information (such as surgical instrument position) back to the MR image space or **d)** transforming a MR-defined point cloud to ultrasound imaging coordinates (N.B. in this case an inverting of the predicted transformation may be required). This tutorial also demonstrates a function _warp_volumes_by_ddf_ using TensorFlow ([apps.py][app_file]) to warp MR images or MR-defined labels in batches on GPU:
 ```python
 warped_images = app.warp_volumes_by_ddf(reader_moving_image.get_data(), ddf)
 
@@ -272,7 +272,7 @@ Even with unlimited data pairs, there is a physical bounds of the label availabi
 
 
 **Acknowledgement** 
-The author is grateful for a CMIC Platform Fellowship and a Medical Image Analysis Network Knowladge Exchange Scheme, both funded by UK EPSRC.
+The author is grateful for a CMIC Platform Fellowship and a Medical Image Analysis Network Knowladge Exchange Project, both funded by UK EPSRC.
 
 
 
