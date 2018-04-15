@@ -225,6 +225,3 @@ class ConfigParser:
             'See other parameters in the template config file config_demo.ini.',
             ''
         ]))
-
-
-

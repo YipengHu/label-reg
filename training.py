@@ -106,8 +106,3 @@ for step in range(config['Train']['total_iterations']):
     if step in range(0, config['Train']['total_iterations'], config['Train']['freq_model_save']):
         save_path = saver.save(sess, config['Train']['file_model_save'], write_meta_graph=False)
         print("Model saved in: %s" % save_path)
-
-
-
-
-

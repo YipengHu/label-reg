@@ -79,4 +79,3 @@ def compute_centroid_distance(input1, input2, grid=None):
     c1 = compute_centroid(input1, grid)
     c2 = compute_centroid(input2, grid)
     return tf.sqrt(tf.reduce_sum(tf.square(c1-c2), axis=1))
-

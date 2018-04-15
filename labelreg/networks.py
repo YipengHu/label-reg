@@ -19,9 +19,15 @@ class BaseNet:
         self.minibatch_size = minibatch_size
         self.image_size = image_fixed.shape.as_list()[1:4]
         self.grid_ref = util.get_reference_grid(self.image_size)
+        self.grid_warped = tf.zeros_like(self.grid_ref)  # initial zeros are safer for debug
         self.image_moving = image_moving
         self.image_fixed = image_fixed
         self.input_layer = tf.concat([layer.resize_volume(image_moving, self.image_size), image_fixed], axis=4)
+
+    def warp_image(self, input_):
+        if input_ is None:
+            input_ = self.image_moving
+        return util.resample_linear(input_, self.grid_warped)
 
 
 class LocalNet(BaseNet):
@@ -50,11 +56,6 @@ class LocalNet(BaseNet):
                                           axis=5), axis=5)
         self.grid_warped = self.grid_ref + self.ddf
 
-    def warp_image(self, input_):
-        if input_ is None:
-            input_ = self.image_moving
-        return util.resample_linear(input_, self.grid_warped)
-
 
 class GlobalNet(BaseNet):
 
@@ -75,11 +76,6 @@ class GlobalNet(BaseNet):
         self.grid_warped = util.warp_grid(self.grid_ref, theta)
         self.ddf = self.grid_warped - self.grid_ref
 
-    def warp_image(self, input_=None):
-        if input_ is None:
-            input_ = self.image_moving
-        return util.resample_linear(input_, self.grid_warped)
-
 
 class CompositeNet(BaseNet):
 
@@ -96,9 +92,3 @@ class CompositeNet(BaseNet):
 
         self.grid_warped = global_net.grid_warped + local_net.ddf
         self.ddf = self.grid_warped - self.grid_ref
-
-    def warp_image(self, input_):
-        if input_ is None:
-            input_ = self.image_moving
-        return util.resample_linear(input_, self.grid_warped)
-
