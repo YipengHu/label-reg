@@ -270,7 +270,7 @@ It may be the case that, due to the nature of weakly-supervised learning, differ
 
 The downside of Dice, however, is that it lacks a clear interpretation of the weak-supervision, leaning towards a general unsupervised learning where any loss function is sensible if it drives the image alignment. The practical difference worth a name such as "weak supervision" is perhaps that the loss function is not dependent on the image modality, only applied on segmentation labels. This, to certain degree, may be closer to traditional feature-based registration method, while the role of neural network is a better way to learn the feature representation. It also reflects the fact that this method, compared with other unsupervised learning, relies on anatomical knowledge in human labelling instead of statistical properties summarised otherwise (e.g. through image-based similarity measures).
 
-Even with unlimited data pairs, there is a physical bounds of the label availability partly due to the underlying imaging process that simply do not produce voxel-level correspondence information and partly due to limited anatomical knowledge. In this case, prior knowledge on application-specific physical transformation (instead of bending energy for instance) and combining with other intensity-based similarity might provide further assistance.
+Even with unlimited data pairs, there is a physical bounds of the label availability partly due to the underlying imaging process that simply do not produce voxel-level correspondence information and partly due to limited anatomical knowledge. In this case, prior knowledge on, for example, [application-specific physical transformation][Hu2018c] instead of bending energy for instance and combining with other intensity-based similarity might provide further assistance.
 
 
 **Acknowledgement** 
@@ -292,7 +292,8 @@ The author is grateful for a CMIC Platform Fellowship and a Medical Image Analys
 [app_file]: ./labelreg/apps.py
 
 [Hu2018a]: https://arxiv.org/abs/1711.01666
-[Hu2018b]: https://arxiv.org/abs/1711.01666
+[Hu2018b]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/doc/Hu2018b
+[Hu2018c]: https://arxiv.org/abs/1805.10665
 [TheDeepLearningBook]: http://www.deeplearningbook.org/
 
 [niftynet]: http://niftynet.io/
