@@ -209,7 +209,7 @@ Example inference script is in the top-level [inference.py][inference_file], whi
 
 [TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, sys, time and nibabel (for file IO only), all easily available if not already installed. Get a copy of the code, e.g. on Linux:
 ```
-git clone https://gitlab.com/yipeng/label-reg-demo
+git clone https://github.com/yipenghu/label-reg-demo
 ```
 or download from here:
 
@@ -280,7 +280,7 @@ The author is grateful for a CMIC Platform Fellowship and a Medical Image Analys
 
 
 [data]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/data.zip
-[code]: https://gitlab.com/Yipeng/label-reg-demo/repository/master/archive.zip
+[code]: https://github.com/YipengHu/label-reg-demo/archive/master.zip
 
 [config_file]: ./config_demo.ini
 [loss_file]: ./labelreg/losses.py
@@ -291,8 +291,8 @@ The author is grateful for a CMIC Platform Fellowship and a Medical Image Analys
 [training_file]: ./training.py
 [app_file]: ./labelreg/apps.py
 
-[Hu2018a]: https://arxiv.org/abs/1711.01666
-[Hu2018b]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/doc/Hu2018b
+[Hu2018a]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/doc/Hu2018a
+[Hu2018b]: https://arxiv.org/abs/1711.01666
 [Hu2018c]: https://arxiv.org/abs/1805.10665
 [TheDeepLearningBook]: http://www.deeplearningbook.org/
 
