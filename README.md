@@ -83,10 +83,10 @@ Partly due to the sparsity of the training labels, regularisation of the predict
 First, get the data reader objects and other data information with the readers:
 ```python
 reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label = helper.get_data_readers(
-    '~/git/label-reg-demo/data/train/mr_images',
-    '~/git/label-reg-demo/data/train/us_images',
-    '~/git/label-reg-demo/data/train/mr_labels',
-    '~/git/label-reg-demo/data/train/us_labels')
+    '~/git/label-reg/data/train/mr_images',
+    '~/git/label-reg/data/train/us_images',
+    '~/git/label-reg/data/train/mr_labels',
+    '~/git/label-reg/data/train/us_labels')
 ```
 
 * **Training-Step-2 (Graph)**:
@@ -166,8 +166,8 @@ The Dice scores should be consistently above 0.90 after a few thousand iteration
 ### <a name="section2-5"></a>Inference
 Considering the difference between the inference and the training is an effective way to obtain insight of this registration method. The first difference is on the data. While the training requires moving-fixed-image-label quartets, inference only needs a pair of moving and fixed images:
 ```python
-reader_moving_image, reader_fixed_image, _, _ = helper.get_data_readers('~/git/label-reg-demo/data/test/mr_images',
-                                                                        '~/git/label-reg-demo/data/test/us_images')
+reader_moving_image, reader_fixed_image, _, _ = helper.get_data_readers('~/git/label-reg/data/test/mr_images',
+                                                                        '~/git/label-reg/data/test/us_images')
 ph_moving_image = tf.placeholder(tf.float32, [reader_moving_image.num_data]+reader_moving_image.data_shape+[1])
 ph_fixed_image = tf.placeholder(tf.float32, [reader_fixed_image.num_data]+reader_fixed_image.data_shape+[1])
 ```
@@ -181,7 +181,7 @@ reg_net = network.build_network(network_type='local',
 
 saver = tf.train.Saver()
 sess = tf.Session()
-saver.restore(sess, '~/git/label-reg-demo/data/model.ckpt')
+saver.restore(sess, '~/git/label-reg/data/model.ckpt')
 ```
 
 Then, the DDF can be computed using one-pass evaluation on the pairs of images to register:
@@ -197,7 +197,7 @@ Depending on the application, the predicted DDF can be used in several ways, suc
 ```python
 warped_images = app.warp_volumes_by_ddf(reader_moving_image.get_data(), ddf)
 
-data_moving_label = helper.DataReader('~/git/label-reg-demo/data/test/mr_labels').get_data(label_indices=[0])
+data_moving_label = helper.DataReader('~/git/label-reg/data/test/mr_labels').get_data(label_indices=[0])
 warped_labels = app.warp_volumes_by_ddf(data_moving_label, ddf)
 ```
 
@@ -209,7 +209,7 @@ Example inference script is in the top-level [inference.py][inference_file], whi
 
 [TensorFlow][tensorflow_install] needs to be installed first, with a handful standard python modules, numpy, random, os, sys, time and nibabel (for file IO only), all easily available if not already installed. Get a copy of the code, e.g. on Linux:
 ```
-git clone https://github.com/yipenghu/label-reg-demo
+git clone https://github.com/yipenghu/label-reg
 ```
 or download from here:
 
@@ -223,10 +223,10 @@ Data files readable by [NiBabel][nibabel] should work with the DataReader in [he
 * The training data should be in separate folders and the folder names are specified under the [Data] section in the [config_demo.ini][config_file], for example:
 ```
 [Data]
-dir_moving_image = ~/git/label-reg-demo/data/train/mr_images
-dir_fixed_image = ~/git/label-reg-demo/data/train/us_images
-dir_moving_label = ~/git/label-reg-demo/data/train/mr_labels
-dir_fixed_label = ~/git/label-reg-demo/data/train/us_labels
+dir_moving_image = ~/git/label-reg/data/train/mr_images
+dir_fixed_image = ~/git/label-reg/data/train/us_images
+dir_moving_label = ~/git/label-reg/data/train/mr_labels
+dir_fixed_label = ~/git/label-reg/data/train/us_labels
 ```
 * They should have the same number of image volume files (patients/subjects). The code currently assigns corresponding subjects by re-ordered file names. So it is easier to just rename them so that four files from the same patient/subject have the same file name;
 * Each image file contains a 3D image of the same shape, with a data type convertible to float32;
@@ -237,7 +237,7 @@ dir_fixed_label = ~/git/label-reg-demo/data/train/us_labels
 
 One can customise a config file to specify other parameters mentioned in the tutorial. Use the same [config_demo.ini][config_file] file as a template. Both [training.py][training_file] and [inference.py][inference_file] can take a command line argument for the customised config file path, for example:
 ```python
-python3 ~/git/label-reg-demo/training.py ~/myTrainingConfig.ini
+python3 ~/git/label-reg/training.py ~/myTrainingConfig.ini
 ```
 The trained model will be saved in file_model_save under [Train] section specified in [config_demo.ini][config_file].
 
@@ -280,7 +280,7 @@ The author is grateful for a CMIC Platform Fellowship and a Medical Image Analys
 
 
 [data]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/data.zip
-[code]: https://github.com/YipengHu/label-reg-demo/archive/master.zip
+[code]: https://github.com/YipengHu/label-reg/archive/master.zip
 
 [config_file]: ./config_demo.ini
 [loss_file]: ./labelreg/losses.py
