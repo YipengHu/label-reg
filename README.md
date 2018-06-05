@@ -47,7 +47,7 @@ The idea of the weakly-supervised learning is to use labels that represent the s
 
 While the goal of registration is predicting DDF which we do not have ground-truth data for, the method is considered as "weakly-supervised" because the anatomical labels are used only in training. They are treated as if they are the "target labels" instead of "input predictors" in a classical regression analysis. More on the topic of [weakly-supervised registration](#section4) is discussed and it is not in the papers! ;)
 
-The trick here is to use _only_ images (moving and fixed) as input to the neural network without any labels, but the network-predicted DDF can be used to warp the associated labels (from the moving image) to match to labels from the target image, as shown in the picture:
+The trick here, closely related to _Learning with privileged information_, is to use _only_ images (moving and fixed) as input to the neural network without any labels, but the network-predicted DDF can be used to warp the associated labels (from the moving image) to match to labels from the target image, as shown in the picture:
 ![alt text](https://github.com/YipengHu/example-data/raw/master/label-reg-demo/media/training.jpg "Training")
 
 As a result, labels are not required in the subsequent inference, i.e. the registration predicting DDFs. It is, therefore, a fully-automated image registration accepts a pair of images and predicts a DDF, without segmentation of any kind to aid alignment or initialisation.
