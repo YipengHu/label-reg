@@ -21,8 +21,8 @@ reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label
 
 
 # 2 - graph
-ph_moving_image = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+reader_moving_image.data_shape+[1])
-ph_fixed_image = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+reader_fixed_image.data_shape+[1])
+ph_moving_image = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+reader_moving_image.data_shape+[reader_moving_image.num_dims])
+ph_fixed_image = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+reader_fixed_image.data_shape+[reader_fixed_image.num_dims])
 ph_moving_affine = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+[1, 12])
 ph_fixed_affine = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+[1, 12])
 input_moving_image = util.warp_image_affine(ph_moving_image, ph_moving_affine)  # data augmentation

@@ -16,6 +16,11 @@ def get_data_readers(dir_image0, dir_image1, dir_label0=None, dir_label1=None):
     # some checks
     if not (reader_image0.num_data == reader_image1.num_data):
         raise Exception('Unequal num_data between images0 and images1!')
+    if reader_image0 == 0:
+        raise Exception('images0 do not have the same number of dimensions!')
+    if reader_image1 == 0:
+        raise Exception('images1 do not have the same number of dimensions!')
+
     if dir_label0 is not None:
         if not (reader_image0.num_data == reader_label0.num_data):
             raise Exception('Unequal num_data between images0 and labels0!')
@@ -45,6 +50,11 @@ class DataReader:
         self.num_labels = [self.file_objects[i].shape[3] if len(self.file_objects[i].shape) == 4
                            else 1
                            for i in range(self.num_data)]
+
+        if len(np.unique(self.num_labels)) == 1:
+            self.num_dims = self.num_labels[0]
+        else:
+            self.num_dims = 0  # variable dimensions
 
         self.data_shape = list(self.file_objects[0].shape[0:3])
 
