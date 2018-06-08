@@ -15,8 +15,8 @@ reader_moving_image, reader_fixed_image, _, _ = helper.get_data_readers(config['
 
 # 2 - graph
 # network for predicting ddf only
-ph_moving_image = tf.placeholder(tf.float32, [reader_moving_image.num_data]+reader_moving_image.data_shape+[1])
-ph_fixed_image = tf.placeholder(tf.float32, [reader_fixed_image.num_data]+reader_fixed_image.data_shape+[1])
+ph_moving_image = tf.placeholder(tf.float32, [reader_moving_image.num_data]+reader_moving_image.data_shape+[reader_moving_image.num_dims])
+ph_fixed_image = tf.placeholder(tf.float32, [reader_fixed_image.num_data]+reader_fixed_image.data_shape+[reader_fixed_image.num_dims])
 
 reg_net = network.build_network(network_type=config['Network']['network_type'],
                                 minibatch_size=reader_moving_image.num_data,
