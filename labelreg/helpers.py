@@ -73,7 +73,10 @@ class DataReader:
             data = [self.file_objects[i].dataobj[..., j] if self.num_labels[i] > 1
                     else np.asarray(self.file_objects[i].dataobj)
                     for (i, j) in zip(case_indices, label_indices)]
-        return np.expand_dims(np.stack(data, axis=0), axis=4)
+        data = np.stack(data, axis=0)
+        if data.ndim == 4:
+            data = np.expand_dims(data, axis=4)
+        return data
 
 
 def random_transform_generator(batch_size, corner_scale=.1):
