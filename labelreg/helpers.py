@@ -16,10 +16,14 @@ def get_data_readers(dir_image0, dir_image1, dir_label0=None, dir_label1=None):
     # some checks
     if not (reader_image0.num_data == reader_image1.num_data):
         raise Exception('Unequal num_data between images0 and images1!')
-    if reader_image0 == 0:
+    if reader_image0.num_dims == 0:
         raise Exception('images0 do not have the same number of dimensions!')
-    if reader_image1 == 0:
+    elif reader_image0.num_dims > 1:
+        print('WARNING: images0 has multiple channels - experimental only!')
+    if reader_image1.num_dims == 0:
         raise Exception('images1 do not have the same number of dimensions!')
+    elif reader_image1.num_dims > 1:
+        print('WARNING: images1 has multiple channels - experimental only!')
 
     if dir_label0 is not None:
         if not (reader_image0.num_data == reader_label0.num_data):
