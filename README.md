@@ -233,7 +233,8 @@ dir_fixed_label = ~/git/label-reg/data/train/us_labels
 * Each label file contains a 4D volume with 4th dimension contains different landmarks delineated from the associated image volume. The segmented-foreground and background are represented by or convertible to float32 0s and 1s, respectively;
 * The number of landmarks can be variable (and large) across patients/subjects, but has to be the same within each pair from the same patient/subject, between _moving label_ and _fixed label_ (i.e. representing corresponding landmark pairs);
 * The image and each of its landmark (one 3D volume in the 4D label) should have the same shape, while the moving and fixed data do not need to have the same shape;
-* If inference or test is needed, also specify those folder names under [Inference] section in [config_demo.ini][config_file].
+* If inference or test is needed, also specify those folder names under [Inference] section in [config_demo.ini][config_file];
+* Any global coordinate systems defined in file headers are ignored.
 
 One can customise a config file to specify other parameters mentioned in the tutorial. Use the same [config_demo.ini][config_file] file as a template. Both [training.py][training_file] and [inference.py][inference_file] can take a command line argument for the customised config file path, for example:
 ```python
