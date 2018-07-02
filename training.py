@@ -61,6 +61,8 @@ dist = util.compute_centroid_distance(warped_moving_label, input_fixed_label)
 num_minibatch = int(reader_moving_label.num_data/config['Train']['minibatch_size'])
 train_indices = [i for i in range(reader_moving_label.num_data)]
 
+fid_info = open(config['Train']['file_info_save'], 'a')
+
 saver = tf.train.Saver(max_to_keep=1)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
@@ -102,6 +104,17 @@ for step in range(config['Train']['total_iterations']):
         print('  Dice: %s' % dice_train)
         print('  Distance: %s' % dist_train)
         print('  Image-label indices: %s - %s' % (case_indices, label_indices))
+        
+        print('Step %d [%s]: Loss=%f (similarity=%f, regulariser=%f)' %
+              (step,
+               current_time,
+               loss_similarity_train+loss_regulariser_train,
+               1-loss_similarity_train,
+               loss_regulariser_train), flush=True, file=fid_info)
+        print('  Dice: %s' % dice_train, flush=True, file=fid_info)
+        print('  Distance: %s' % dist_train, flush=True, file=fid_info)
+        print('  Image-label indices: %s - %s' % (case_indices, label_indices), flush=True, file=fid_info)
+        
 
     if step in range(0, config['Train']['total_iterations'], config['Train']['freq_model_save']):
         save_path = saver.save(sess, config['Train']['file_model_save'], write_meta_graph=False)

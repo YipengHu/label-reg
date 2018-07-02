@@ -199,6 +199,7 @@ class ConfigParser:
                  'learning_rate': 1e-5,
                  'minibatch_size': 2,
                  'freq_info_print': 100,
+                 'file_info_save': os.path.join(home_dir, 'data/train_info.out'),
                  'freq_model_save': 500,
                  'file_model_save': os.path.join(home_dir, 'data/model.ckpt')}
 
