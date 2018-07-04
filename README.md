@@ -292,7 +292,7 @@ The author is grateful for a CMIC Platform Fellowship and a Medical Image Analys
 [training_file]: ./training.py
 [app_file]: ./labelreg/apps.py
 
-[Hu2018a]: https://github.com/YipengHu/example-data/raw/master/label-reg-demo/doc/Hu2018a
+[Hu2018a]: https://www.sciencedirect.com/science/article/pii/S1361841518301051
 [Hu2018b]: https://arxiv.org/abs/1711.01666
 [Hu2018c]: https://arxiv.org/abs/1805.10665
 [TheDeepLearningBook]: http://www.deeplearningbook.org/
