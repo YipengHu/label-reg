@@ -71,6 +71,14 @@ def separable_filter3d(vol, kernel):
             tf.reshape(kernel, [1, 1, -1, 1, 1]), strides, "SAME")
 
 
+def centre_distance(ts, ps, grid, eps_overlap=1e-6):
+    m1 = tf.reduce_sum(ts, axis=[1, 2, 3, 4])+eps_overlap
+    m2 = tf.reduce_sum(ps, axis=[1, 2, 3, 4])+eps_overlap
+    c1 = tf.reduce_sum(ts * tf.expand_dims(grid, axis=0), axis=[1, 2, 3, 4]) / m1
+    c2 = tf.reduce_sum(ps * tf.expand_dims(grid, axis=0), axis=[1, 2, 3, 4]) / m2
+    return tf.sqrt(tf.reduce_sum(tf.square(c1-c2), axis=1, keep_dims=True))
+
+
 def single_scale_loss(label_fixed, label_moving, loss_type):
     if loss_type == 'cross-entropy':
         label_loss_batch = tf.reduce_mean(weighted_binary_cross_entropy(label_fixed, label_moving), axis=[1, 2, 3, 4])
@@ -80,6 +88,8 @@ def single_scale_loss(label_fixed, label_moving, loss_type):
         label_loss_batch = 1 - dice_simple(label_fixed, label_moving)
     elif loss_type == 'jaccard':
         label_loss_batch = 1 - jaccard_simple(label_fixed, label_moving)
+    elif loss_type == 'centre-distance':  # experimental
+        label_loss_batch = centre_distance(label_fixed, label_moving)
     else:
         raise Exception('Not recognised label correspondence loss!')
     return label_loss_batch

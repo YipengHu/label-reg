@@ -238,7 +238,7 @@ class ConfigParser:
             '',
             'Options in config file myConfig.ini:',
             '   network_type:       {local, global, composite}',
-            '   similarity_type:    {dice, cross-entropy, mean-squared, jaccard}',
+            '   similarity_type:    {dice, cross-entropy, mean-squared, jaccard, centre-distance}',
             '   regulariser_type:   {bending, gradient-l2, gradient-l1}',
             'See other parameters in the template config file config_demo.ini.',
             ''
