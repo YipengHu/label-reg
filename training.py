@@ -49,7 +49,9 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config['Loss
                                                     label_moving=warped_moving_label,
                                                     label_fixed=input_fixed_label,
                                                     network_type=config['Network']['network_type'],
-                                                    ddf=reg_net.ddf)
+                                                    ddf=reg_net.ddf,
+                                                    grid = reg_net.grid_ref)
+
 
 train_op = tf.train.AdamOptimizer(config['Train']['learning_rate']).minimize(loss_similarity+loss_regulariser)
 
