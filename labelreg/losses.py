@@ -1,9 +1,10 @@
 import tensorflow as tf
 
 
+
 def build_loss(similarity_type, similarity_scales, regulariser_type, regulariser_weight,
-               label_moving, label_fixed, network_type, ddf):
-    label_similarity = multi_scale_loss(label_fixed, label_moving, similarity_type.lower(), similarity_scales)
+               label_moving, label_fixed, network_type, ddf, grid):
+    label_similarity = multi_scale_loss(label_fixed, label_moving, similarity_type.lower(), grid, similarity_scales)
     if network_type.lower() == 'global':
         ddf_regularisation = tf.constant(0.0)
     else:
@@ -76,10 +77,10 @@ def centre_distance(ts, ps, grid, eps_overlap=1e-6):
     m2 = tf.reduce_sum(ps, axis=[1, 2, 3, 4])+eps_overlap
     c1 = tf.reduce_sum(ts * tf.expand_dims(grid, axis=0), axis=[1, 2, 3, 4]) / m1
     c2 = tf.reduce_sum(ps * tf.expand_dims(grid, axis=0), axis=[1, 2, 3, 4]) / m2
-    return tf.sqrt(tf.reduce_sum(tf.square(c1-c2), axis=1, keep_dims=True))
+    return tf.sqrt(tf.reduce_sum(tf.square(c1-c2), axis=0, keep_dims=True))
 
 
-def single_scale_loss(label_fixed, label_moving, loss_type):
+def single_scale_loss(label_fixed, label_moving, loss_type, grid):
     if loss_type == 'cross-entropy':
         label_loss_batch = tf.reduce_mean(weighted_binary_cross_entropy(label_fixed, label_moving), axis=[1, 2, 3, 4])
     elif loss_type == 'mean-squared':
@@ -89,17 +90,17 @@ def single_scale_loss(label_fixed, label_moving, loss_type):
     elif loss_type == 'jaccard':
         label_loss_batch = 1 - jaccard_simple(label_fixed, label_moving)
     elif loss_type == 'centre-distance':  # experimental
-        label_loss_batch = centre_distance(label_fixed, label_moving)
+        label_loss_batch = centre_distance(label_fixed, label_moving, grid)
     else:
         raise Exception('Not recognised label correspondence loss!')
     return label_loss_batch
 
 
-def multi_scale_loss(label_fixed, label_moving, loss_type, loss_scales):
+def multi_scale_loss(label_fixed, label_moving, loss_type, grid, loss_scales):
     label_loss_all = tf.stack(
         [single_scale_loss(
             separable_filter3d(label_fixed, gauss_kernel1d(s)),
-            separable_filter3d(label_moving, gauss_kernel1d(s)), loss_type)
+            separable_filter3d(label_moving, gauss_kernel1d(s)), loss_type, grid)
             for s in loss_scales],
         axis=1)
     return tf.reduce_mean(label_loss_all, axis=1)
