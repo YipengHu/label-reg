@@ -6,8 +6,8 @@ import time
 import labelreg.helpers as helper
 import labelreg.networks as network
 import labelreg.utils as util
-import labelreg.losses as loss
-
+# import labelreg.losses as loss
+import labelreg.modLosses as loss
 
 # 0 - get configs
 config = helper.ConfigParser(sys.argv, 'training')
@@ -21,8 +21,10 @@ reader_moving_image, reader_fixed_image, reader_moving_label, reader_fixed_label
 
 
 # 2 - graph
-ph_moving_image = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+reader_moving_image.data_shape+[1])
-ph_fixed_image = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+reader_fixed_image.data_shape+[1])
+ph_moving_image = tf.placeholder(
+    tf.float32, [config['Train']['minibatch_size']]+reader_moving_image.data_shape+[1])
+ph_fixed_image = tf.placeholder(
+    tf.float32, [config['Train']['minibatch_size']]+reader_fixed_image.data_shape+[1])
 ph_moving_affine = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+[1, 12])
 ph_fixed_affine = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+[1, 12])
 input_moving_image = util.warp_image_affine(ph_moving_image, ph_moving_affine)  # data augmentation
@@ -35,13 +37,18 @@ reg_net = network.build_network(network_type=config['Network']['network_type'],
                                 image_fixed=input_fixed_image)
 
 # loss
-ph_moving_label = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+reader_moving_image.data_shape+[1])
-ph_fixed_label = tf.placeholder(tf.float32, [config['Train']['minibatch_size']]+reader_fixed_image.data_shape+[1])
-input_moving_label = util.warp_image_affine(ph_moving_label, ph_moving_affine)  # data augmentation
-input_fixed_label = util.warp_image_affine(ph_fixed_label, ph_fixed_affine)  # data augmentation
+ph_moving_label = tf.placeholder(
+    tf.float32, [config['Train']['minibatch_size']]+reader_moving_image.data_shape+[1])
+ph_fixed_label = tf.placeholder(
+    tf.float32, [config['Train']['minibatch_size']]+reader_fixed_image.data_shape+[1])
 
-warped_moving_label = reg_net.warp_image(input_moving_label)  # warp the moving label with the predicted ddf
+# Comment out for our purposes
+# input_moving_label = util.warp_image_affine(ph_moving_label, ph_moving_affine)  # data augmentation
+# input_fixed_label = util.warp_image_affine(ph_fixed_label, ph_fixed_affine)  # data augmentation
+#
+# warped_moving_label = reg_net.warp_image(input_moving_label)  # warp the moving label with the predicted ddf
 
+# ------------------LOSS -------------------------------
 loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config['Loss']['similarity_type'],
                                                     similarity_scales=config['Loss']['similarity_scales'],
                                                     regulariser_type=config['Loss']['regulariser_type'],
@@ -51,8 +58,9 @@ loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config['Loss
                                                     network_type=config['Network']['network_type'],
                                                     ddf=reg_net.ddf)
 
-train_op = tf.train.AdamOptimizer(config['Train']['learning_rate']).minimize(loss_similarity+loss_regulariser)
-
+train_op = tf.train.AdamOptimizer(config['Train']['learning_rate']).minimize(
+    loss_similarity+loss_regulariser)
+# --------------------------------------------------
 # utility nodes - for information only
 dice = util.compute_binary_dice(warped_moving_label, input_fixed_label)
 dist = util.compute_centroid_distance(warped_moving_label, input_fixed_label)
@@ -71,7 +79,7 @@ for step in range(config['Train']['total_iterations']):
 
     minibatch_idx = step % num_minibatch
     case_indices = train_indices[
-                    minibatch_idx*config['Train']['minibatch_size']:(minibatch_idx+1)*config['Train']['minibatch_size']]
+        minibatch_idx*config['Train']['minibatch_size']:(minibatch_idx+1)*config['Train']['minibatch_size']]
     label_indices = [random.randrange(reader_moving_label.num_labels[i]) for i in case_indices]
 
     trainFeed = {ph_moving_image: reader_moving_image.get_data(case_indices),
