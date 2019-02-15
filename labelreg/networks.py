@@ -24,7 +24,7 @@ class BaseNet:
         self.image_fixed = image_fixed
         self.input_layer = tf.concat([layer.resize_volume(image_moving, self.image_size), image_fixed], axis=4)
 
-    def warp_image(self, input_):
+    def warp_image(self, input_=None):
         if input_ is None:
             input_ = self.image_moving
         return util.resample_linear(input_, self.grid_warped)
