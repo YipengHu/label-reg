@@ -54,9 +54,9 @@ def resample_linear(inputs, sample_coords):
 
 def get_reference_grid(grid_size):
     return tf.to_float(tf.stack(tf.meshgrid(
-        [i for i in range(grid_size[1])],
-        [j for j in range(grid_size[0])],
-        [k for k in range(grid_size[2])]), axis=3))
+        [i for i in range(grid_size[0])],
+        [j for j in range(grid_size[1])],
+        [k for k in range(grid_size[2])], indexing='ij'), axis=3))
 
 
 def compute_binary_dice(input1, input2):

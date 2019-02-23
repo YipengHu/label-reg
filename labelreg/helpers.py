@@ -192,10 +192,14 @@ class ConfigParser:
                      'dir_moving_label': '',
                      'dir_fixed_label': ''}
 
+        debug = {'debug_steps': []}
+
         if self.config_type == 'training':
             config = {'Data': data, 'Network': network, 'Loss': loss, 'Train': train}
         elif self.config_type == 'inference':
             config = {'Network': network, 'Inference': inference}
+        elif self.config_type == 'debug':
+            config = {'Debug': debug}
         else:
             config = {'Data': data, 'Network': network, 'Loss': loss, 'Train': train, 'Inference': inference}
 

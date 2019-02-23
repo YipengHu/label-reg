@@ -8,6 +8,11 @@ import labelreg.networks as network
 import labelreg.utils as util
 import labelreg.losses as loss
 
+debug_steps = [0, 1]
+
+if debug_steps:
+    import numpy as np
+
 
 # 0 - get configs
 config = helper.ConfigParser(sys.argv, 'training')
@@ -41,6 +46,9 @@ input_moving_label = util.warp_image_affine(ph_moving_label, ph_moving_affine)  
 input_fixed_label = util.warp_image_affine(ph_fixed_label, ph_fixed_affine)  # data augmentation
 
 warped_moving_label = reg_net.warp_image(input_moving_label)  # warp the moving label with the predicted ddf
+
+if debug_steps:
+    warped_image = reg_net.warp_image(input_moving_image)
 
 loss_similarity, loss_regulariser = loss.build_loss(similarity_type=config['Loss']['similarity_type'],
                                                     similarity_scales=config['Loss']['similarity_scales'],
@@ -82,6 +90,18 @@ for step in range(config['Train']['total_iterations']):
                  ph_fixed_affine: helper.random_transform_generator(config['Train']['minibatch_size'])}
 
     sess.run(train_op, feed_dict=trainFeed)
+
+    # debug
+    if step in debug_steps:
+        ph_moving_image_debug, ph_fixed_image_debug, input_moving_image_debug, input_fixed_image_debug, warped_moving_label_debug, warped_image_debug = sess.run(
+            [ph_moving_image, ph_fixed_image, input_moving_image, input_fixed_image, warped_moving_label, warped_image], feed_dict=trainFeed)
+        np.save('debug%d_ph_moving_image' % step, ph_moving_image_debug)
+        np.save('debug%d_ph_fixed_image' % step, ph_fixed_image_debug)
+        np.save('debug%d_input_moving_image' % step, input_moving_image_debug)
+        np.save('debug%d_input_fixed_image' % step, input_fixed_image_debug)
+        np.save('debug%d_warped_moving_label' % step, warped_moving_label_debug)
+        np.save('debug%d_warped_image' % step, warped_image_debug)
+        print("Debug%d data saved" % step)
 
     if step in range(0, config['Train']['total_iterations'], config['Train']['freq_info_print']):
         current_time = time.asctime(time.gmtime())
